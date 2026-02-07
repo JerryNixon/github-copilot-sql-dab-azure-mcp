@@ -42,6 +42,62 @@ Nothing is added silently. Every expansion is a conscious, user-approved decisio
 | CLI | Use `az` CLI for all resource provisioning |
 | Scripts | Save all commands to `azure.ps1` for audit and reuse |
 
+### Orchestration (Aspire vs Docker)
+
+**Before starting any database + API project, detect prerequisites and guide the user:**
+
+#### Step 1: Check Prerequisites
+
+Run these checks silently in background:
+
+```powershell
+# Docker
+docker --version
+
+# Aspire CLI
+aspire --version
+
+# SqlPackage
+sqlpackage /version
+```
+
+#### Step 2: Decision Tree
+
+| Docker | Aspire CLI | Action |
+|--------|-----------|---------|
+| ❌ Missing | Any | Guide user to install Docker Desktop first. Stop here. |
+| ✅ Installed | ❌ Missing | Use **Docker Compose** approach automatically. |
+| ✅ Installed | ✅ Installed | Ask: "I see you have Aspire installed. Do you want to use **Aspire** or **Docker Compose** for orchestration?" |
+
+#### Step 3: SqlPackage Auto-Install
+
+If `sqlpackage` is missing, install it automatically:
+
+```powershell
+dotnet tool install -g microsoft.sqlpackage
+```
+
+#### Step 4: Apply Choice
+
+| Choice | Skill to Use | Files to Create |
+|--------|--------------|-----------------|
+| **Aspire** | `data-api-builder-aspire` | `apphost.cs`, `.env`, `dab-config.json` |
+| **Docker** | `data-api-builder-docker` | `docker-compose.yml`, `.env`, `dab-config.json` |
+
+**Key Differences:**
+
+| Feature | Aspire | Docker Compose |
+|---------|--------|----------------|
+| **Command** | `aspire run` | `docker compose up -d` |
+| **Dashboard** | Built-in at `:15888` | None (manual) |
+| **Language** | C# single file | YAML |
+| **Hot Reload** | Yes with `--watch` | No |
+| **Telemetry** | Automatic (OTLP) | Manual setup |
+| **Prerequisites** | .NET 10+ SDK, Aspire CLI | Docker only |
+
+**When user doesn't have a preference:**
+- Use Docker Compose (fewer prerequisites, more universal)
+
 ### Database
 
 | Context | Technology | CLI |
@@ -81,14 +137,19 @@ Nothing is added silently. Every expansion is a conscious, user-approved decisio
 ```
 
 **Connection String Notes:**
-- Host machine → SQL Server: `Server=localhost,14330` (exposed port)
-- Container → SQL Server: `Server=sql-2025` (Docker service name)
+- Host machine → SQL Server: `Server=localhost,14330` (exposed port from Docker) or `Server=localhost,1433` (Aspire auto-assigned)
+- Docker Compose container → SQL Server: `Server=sql-2025` (service name)
+- Aspire container → SQL Server: `Server=sql-server` (service name)
+
+> **Note:** Aspire uses service name `sql-server`, Docker Compose typically uses `sql-2025` or similar. Check orchestration choice.
 
 **Schema Change Workflow:**
 1. Edit/add `.sql` files in `database/Tables/`
 2. Build: `dotnet build database/database.sqlproj`
 3. Deploy: `sqlpackage /Action:Publish /SourceFile:database/bin/Debug/database.dacpac /TargetConnectionString:"$env:DATABASE_CONNECTION_STRING" /p:BlockOnPossibleDataLoss=false`
-4. Restart DAB: `docker restart api-server`
+4. Restart DAB:
+   - **Docker Compose:** `docker restart api-server`
+   - **Aspire:** Stop (`Ctrl+C`) and re-run `aspire run`
 
 > Note: sqlpackage handles schema diffs automatically — no manual `DROP TABLE` needed.
 
