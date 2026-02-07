@@ -1,5 +1,5 @@
 ---
-name: data-api-builder
+name: data-api-builder-cli
 description: Guide for using Data API Builder CLI. Use when working with DAB configurations, entities, or database API generation.
 license: MIT
 ---

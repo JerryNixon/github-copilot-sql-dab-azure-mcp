@@ -1,5 +1,5 @@
 ---
-name: dab-config
+name: data-api-builder-config
 description: Guide for Data API Builder configuration files. Use when working with dab-config.json structure, validation, or configuration best practices.
 license: MIT
 ---

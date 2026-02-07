@@ -1,5 +1,5 @@
 ---
-name: docker-sql-dab-mcp
+name: data-api-builder-docker
 description: Guide for Docker Compose setup of SQL Server + Data API Builder + SQL Commander + MCP Inspector. Use when asked to create a local Docker dev environment for DAB.
 ---
 

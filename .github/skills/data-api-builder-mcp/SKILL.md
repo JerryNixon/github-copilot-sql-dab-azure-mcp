@@ -1,5 +1,5 @@
 ---
-name: sql-mcp-server
+name: data-api-builder-mcp
 description: Guide for SQL MCP Server (Data API Builder MCP). Use when configuring databases for AI agent access via Model Context Protocol.
 license: MIT
 ---
