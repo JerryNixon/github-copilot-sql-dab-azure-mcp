@@ -105,7 +105,9 @@ Remind the user why this is a best practice and very important. The `.gitignore`
     - Deploy schema: `sqlpackage /Action:Publish ...`
     - Start services:
       - **Aspire:** `aspire run`
-      - **Docker:** `docker compose up -d`
+      - **Docker:** `.\docker.ps1` (starts containers `docker compose up -d`, builds dacpac, waits for SQL healthy, deploys schema)
+
+17. **Create `docker.ps1`** — a single script that runs `docker compose up -d`, builds the database project, waits for SQL Server to be healthy, and deploys the schema with sqlpackage. This is the **only** way to start Docker locally — never run `docker compose up -d` alone, because the database won't have a schema.
 
 **Be useful**: After you deploy to Docker or Azure, if you have included SQL Commander open it in the VS Code browser automatically, if you included MCP Inspector open it as well, if you deployed to Azure, open the Azure portal (https://portal.azure.com) in the browser. Don't open all three. Open only the tools that are relevant to the user's deployment and configuration choices. The first time you create Azure resources, open the portal. Otherwise, favor SQL Commander unless you are in an MCP workflow. 
 
