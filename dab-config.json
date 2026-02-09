@@ -1,0 +1,91 @@
+{
+  "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.7.83-rc/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": "@env('DATABASE_CONNECTION_STRING')"
+  },
+  "runtime": {
+    "rest": {
+      "enabled": true,
+      "path": "/api"
+    },
+    "graphql": {
+      "enabled": false
+    },
+    "mcp": {
+      "enabled": true,
+      "path": "/mcp"
+    },
+    "host": {
+      "mode": "development"
+    }
+  },
+  "entities": {
+    "Shop": {
+      "source": {
+        "object": "dbo.Shops",
+        "type": "table"
+      },
+      "permissions": [
+        {
+          "role": "anonymous",
+          "actions": ["*"]
+        }
+      ],
+      "relationships": {
+        "plants": {
+          "cardinality": "many",
+          "target.entity": "Plant",
+          "source.fields": ["ShopId"],
+          "target.fields": ["ShopId"]
+        }
+      }
+    },
+    "Category": {
+      "source": {
+        "object": "dbo.Categories",
+        "type": "table"
+      },
+      "permissions": [
+        {
+          "role": "anonymous",
+          "actions": ["*"]
+        }
+      ],
+      "relationships": {
+        "plants": {
+          "cardinality": "many",
+          "target.entity": "Plant",
+          "source.fields": ["CategoryId"],
+          "target.fields": ["CategoryId"]
+        }
+      }
+    },
+    "Plant": {
+      "source": {
+        "object": "dbo.Plants",
+        "type": "table"
+      },
+      "permissions": [
+        {
+          "role": "anonymous",
+          "actions": ["*"]
+        }
+      ],
+      "relationships": {
+        "category": {
+          "cardinality": "one",
+          "target.entity": "Category",
+          "source.fields": ["CategoryId"],
+          "target.fields": ["CategoryId"]
+        },
+        "shop": {
+          "cardinality": "one",
+          "target.entity": "Shop",
+          "source.fields": ["ShopId"],
+          "target.fields": ["ShopId"]
+        }
+      }
+    }
+  }
+}
