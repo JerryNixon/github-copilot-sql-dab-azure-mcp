@@ -50,7 +50,7 @@ SA_PASSWORD=YourStrong@Passw0rd
 MSSQL_CONNECTION_STRING=Server=sql-server;Database=MyDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true
 ```
 
-> **Critical:** Add `.env` to `.gitignore` before creating secrets.
+> **Critical:** Add `.env`, `**\bin`, and `**\obj` to `.gitignore` before creating secrets.
 
 ---
 

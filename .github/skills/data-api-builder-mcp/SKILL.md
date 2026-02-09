@@ -525,6 +525,8 @@ FROM mcr.microsoft.com/azure-databases/data-api-builder:1.7.83-rc
 COPY dab-config.json /App/dab-config.json
 ```
 
+> **⚠️ ANTI-PATTERN:** Never use Azure Files, storage accounts, or volume mounts for `dab-config.json`. Always build a custom Docker image with the config embedded and push to ACR. Storage mounts add latency, failure modes, and unnecessary complexity.
+
 **Deploy:**
 ```bash
 az containerapp create \
@@ -926,7 +928,8 @@ dab start --LogLevel Debug
 ## Consistency Rules
 
 1. **Always install prerelease version** for v1.7+ features
-2. **Descriptions are critical** for AI agent success - always recommend adding them
+2. **Require `.gitignore`** with `.env`, `**\bin`, and `**\obj` entries before adding secrets
+3. **Descriptions are critical** for AI agent success - always recommend adding them
 3. **MCP is enabled by default** - only configure when restricting
 4. **Security first** - recommend managed identity + Entra ID for production
 5. **Use entity abstraction** - never recommend exposing raw schema to agents

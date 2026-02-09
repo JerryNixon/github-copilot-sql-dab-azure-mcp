@@ -1547,8 +1547,20 @@ fi
 
 - Always commit `dab-config.json`
 - Never commit `.env` files
+- **Require `.gitignore`** with `.env`, `**\bin`, and `**\obj` entries before adding any secrets
 - Use separate configs per environment
 - Review diffs carefully (permissions changes are security-critical)
+
+### Azure Deployment (Custom Image Pattern)
+
+**Always build a custom Docker image** that embeds `dab-config.json` for Azure deployments:
+
+```dockerfile
+FROM mcr.microsoft.com/azure-databases/data-api-builder:1.7.83-rc
+COPY dab-config.json /App/dab-config.json
+```
+
+> **⚠️ ANTI-PATTERN:** Never use Azure Files, storage accounts, or volume mounts for `dab-config.json`. The config must be baked into the image for immutable, versioned, reproducible deployments.
 
 ### Documentation
 

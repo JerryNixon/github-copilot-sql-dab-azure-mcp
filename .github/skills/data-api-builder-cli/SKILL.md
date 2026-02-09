@@ -851,6 +851,8 @@ dab init \
 
 1. **Always recommend `dab validate` before `dab start`**
 2. **Use environment variables** for connection strings (security)
+3. **Require `.gitignore`** with `.env`, `**\bin`, and `**\obj` entries before adding secrets
+4. **Azure deployments: build custom Docker image** with embedded `dab-config.json` pushed to ACR — never use Azure Files, storage accounts, or volume mounts
 3. **Stored procedures use `execute` permission**, not `read`
 4. **Views require explicit key fields** via `--source.key-fields`
 5. **Field mappings (`--map`) replace all existing mappings** (not additive)

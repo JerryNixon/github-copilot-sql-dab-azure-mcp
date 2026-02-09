@@ -1,0 +1,119 @@
+id: /subscriptions/fa766ff7-203a-4577-b8d9-f0232950e145/resourceGroups/flower-shop-rg/providers/Microsoft.App/containerapps/flower-shop-api
+identity:
+  type: None
+location: West US
+name: flower-shop-api
+properties:
+  configuration:
+    activeRevisionsMode: Single
+    dapr: null
+    identitySettings: []
+    ingress:
+      additionalPortMappings: null
+      allowInsecure: false
+      clientCertificateMode: null
+      corsPolicy: null
+      customDomains: null
+      exposedPort: 0
+      external: true
+      fqdn: flower-shop-api.victorioussmoke-54c8bd80.westus.azurecontainerapps.io
+      ipSecurityRestrictions: null
+      stickySessions: null
+      targetPort: 5000
+      targetPortHttpScheme: null
+      traffic:
+      - latestRevision: true
+        weight: 100
+      transport: Auto
+    maxInactiveRevisions: 100
+    registries: null
+    runtime: null
+    secrets: null
+    service: null
+  customDomainVerificationId: 9BFE46043BB0AF097BE0A43224ABCEC24A66C08FFCDFD0EAF005E74EF4D52D91
+  delegatedIdentities: []
+  environmentId: /subscriptions/fa766ff7-203a-4577-b8d9-f0232950e145/resourceGroups/flower-shop-rg/providers/Microsoft.App/managedEnvironments/flower-shop-env
+  eventStreamEndpoint: https://westus.azurecontainerapps.dev/subscriptions/fa766ff7-203a-4577-b8d9-f0232950e145/resourceGroups/flower-shop-rg/containerApps/flower-shop-api/eventstream
+  latestReadyRevisionName: flower-shop-api--mtl8ybl
+  latestRevisionFqdn: flower-shop-api--mtl8ybl.victorioussmoke-54c8bd80.westus.azurecontainerapps.io
+  latestRevisionName: flower-shop-api--mtl8ybl
+  managedEnvironmentId: /subscriptions/fa766ff7-203a-4577-b8d9-f0232950e145/resourceGroups/flower-shop-rg/providers/Microsoft.App/managedEnvironments/flower-shop-env
+  outboundIpAddresses:
+  - 13.87.246.93
+  - 13.87.246.131
+  - 172.184.201.140
+  - 20.253.230.72
+  - 172.184.199.43
+  - 172.184.144.39
+  - 57.154.179.254
+  - 13.87.246.102
+  - 13.87.246.100
+  - 13.93.214.71
+  - 13.91.44.183
+  - 13.91.98.58
+  - 13.91.96.202
+  - 13.91.40.31
+  - 13.91.45.140
+  - 52.241.252.183
+  - 13.93.226.252
+  - 172.185.144.212
+  - 20.253.243.105
+  - 13.91.101.49
+  - 20.66.108.61
+  - 20.253.179.55
+  - 52.241.252.15
+  - 172.184.116.67
+  - 20.57.201.64
+  - 20.253.254.228
+  - 20.253.254.247
+  - 20.253.254.64
+  - 20.253.254.235
+  - 104.210.49.205
+  - 104.210.49.250
+  - 104.210.49.206
+  - 104.210.55.200
+  - 104.210.49.225
+  - 104.210.49.214
+  - 20.228.76.14
+  patchingMode: Automatic
+  provisioningState: Succeeded
+  runningStatus: Running
+  template:
+    containers:
+    - env:
+      - name: DATABASE_CONNECTION_STRING
+        value: Server=tcp:flower-shop-sql-5723.database.windows.net,1433;Database=FlowerShop;User
+          Id=sqladmin;Password=YourStrong@Passw0rd;TrustServerCertificate=false;Encrypt=true
+      image: mcr.microsoft.com/azure-databases/data-api-builder:1.7.83-rc
+      imageType: ContainerImage
+      name: flower-shop-api
+      resources:
+        cpu: 0.5
+        ephemeralStorage: 2Gi
+        memory: 1Gi
+      volumeMounts:
+      - volumeName: dabconfig
+        mountPath: /App/dab-config.json
+        subPath: dab-config.json
+    initContainers: null
+    revisionSuffix: ''
+    scale:
+      maxReplicas: 1
+      minReplicas: 1
+      rules: null
+    serviceBinds: null
+    terminationGracePeriodSeconds: null
+    volumes:
+    - name: dabconfig
+      storageName: dabstorage
+      storageType: AzureFile
+  workloadProfileName: Consumption
+resourceGroup: flower-shop-rg
+systemData:
+  createdAt: '2026-02-09T04:01:20.7857262'
+  createdBy: jerry@nixoncorp.com
+  createdByType: User
+  lastModifiedAt: '2026-02-09T04:02:52.5997502'
+  lastModifiedBy: jerry@nixoncorp.com
+  lastModifiedByType: User
+type: Microsoft.App/containerApps

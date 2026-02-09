@@ -1,13 +1,12 @@
-# Database Schema Overview
-
-## Flower Shop Plant Inventory
-
-This database tracks plant inventory for a flower shop.
-
-## Entity Relationship Diagram
+# Flower Shop Inventory — Database Overview
 
 ```mermaid
 erDiagram
+    Shops {
+        int ShopId PK
+        nvarchar Name
+        nvarchar Location
+    }
     Categories {
         int CategoryId PK
         nvarchar Name
@@ -18,19 +17,8 @@ erDiagram
         int CategoryId FK
         int Quantity
         decimal Price
+        int ShopId FK
     }
     Categories ||--o{ Plants : contains
+    Shops ||--o{ Plants : stocks
 ```
-
-## Tables
-
-### Categories
-- **CategoryId** (Primary Key): Unique identifier for each category
-- **Name**: Name of the category (e.g., Succulents, Tropical Plants)
-
-### Plants
-- **PlantId** (Primary Key): Unique identifier for each plant
-- **Name**: Name of the plant
-- **CategoryId** (Foreign Key): Links to Categories table
-- **Quantity**: Number of units in stock
-- **Price**: Price per unit
