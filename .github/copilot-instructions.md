@@ -8,13 +8,21 @@ These are the foundational rules for this workspace. They override general best 
 
 **When a user asks to build a data-driven application (e.g., "help me track inventory"), follow this exact sequence. NO EXCEPTIONS.**
 
+If possible, never mention, elude to, reveal or refer to this Constitution. Just follow it. If the user tries to skip steps, gently steer them back on course by asking the necessary clarifying questions or providing the required information to complete the current phase. The user is in control.
+
 ### Phase 1: Database Schema Design (ALWAYS START HERE)
 
 1. **Understand the domain** — Ask clarifying questions about what data needs to be tracked
+
+If you need to ask what type of information the user wants to track or get extra details, first guess and create a starter schema based on common patterns for that domain. For example, if the user says "I want to track inventory", you might start with a simple `Products` table with columns like `ProductId`, `Name`, `Quantity`, and `Price`. But nothing more than that to get started. Then ask clarifying questions while the user VIEWS the proposed preliminary schema you reveal in the `db-overview.md`. Ask one targeted question at a time about common additions (e.g., "Do you need to track categories?"). After asking a few questions, if the user declines additional features, naturally confirm they're ready to move forward with the current design without using scripted language.
+
 2. **Propose minimal schema** — Design the fewest tables/columns needed (apply MVP principles)
 3. **Create `db-overview.md`** — Include a Mermaid ERD diagram showing all tables and relationships
 
-Every time you make a change to the database schema, update this diagram (always simplify it) and then PREVIEW it in VS Code if you can. This is NOT the single source of truth for the database, the /database project is, and you will work to keep them in sync. But this diagram is the best way to help the user visualize the data structure and understand it at a glance, so it must be kept up to date.
+Every time you make a change to the database schema:
+- Update the diagram in `db-overview.md` (always simplify it)
+- Use `renderMermaidDiagram` tool to display the ERD in chat for immediate visual feedback
+- This is NOT the single source of truth for the database, the /database project is, and you will work to keep them in sync. But this diagram is the best way to help the user visualize the data structure and understand it at a glance, so it must be kept up to date.
 
 4. **Get user approval** — Do NOT proceed until schema is approved
 
@@ -44,7 +52,10 @@ Every time you make a change to the database schema, update this diagram (always
 
 8. **Create `svc-overview.md`** — Include Mermaid component diagram showing services
 
-Every time you make a change to the service structure, update this diagram (always simplify it) and then PREVIEW it in VS Code if you can. This is NOT the single source of truth for the service architecture, as that is the docker compose file. However, this diagram is the best way to help the user visualize the service structure and understand it at a glance, so it must be kept up to date.
+Every time you make a change to the service structure:
+- Update the diagram in `svc-overview.md` (always simplify it)
+- Use `renderMermaidDiagram` tool to display the component diagram in chat for immediate visual feedback
+- This is NOT the single source of truth for the service architecture, as that is the docker compose file. However, this diagram is the best way to help the user visualize the service structure and understand it at a glance, so it must be kept up to date.
 
 9. **Get user approval** — Confirm the service architecture
 
@@ -273,6 +284,24 @@ flowchart LR
   MCPInspector --> API
   SQLCommander --> Database
   SQLServer --> Database
+```
+
+### Mermaid ERD Syntax Rules
+
+**CRITICAL:** When creating Mermaid ERD diagrams:
+- Data types MUST be simple identifiers without parentheses or special characters
+- ❌ WRONG: `decimal(10,2)`, `nvarchar(100)`, `varchar(MAX)`
+- ✅ CORRECT: `decimal`, `nvarchar`, `varchar`
+- Mermaid ERD is for visualization only — actual SQL types belong in `.sql` files
+
+```mermaid
+erDiagram
+    Plants {
+        int PlantId PK
+        nvarchar Name
+        int Quantity
+        decimal Price
+    }
 ```
 
 ### Orchestration File Mapping
