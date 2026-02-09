@@ -22,10 +22,12 @@ flowchart LR
     subgraph Azure ["Azure Container Apps"]
         API["API Builder"]
     end
+    ACR["Container Registry"] -.-> API
     API --> DB[(Azure SQL)]
 ```
 
 | Service | URL |
 |---------|-----|
-| REST API | [Open Azure API](command:simpleBrowser.show?%5B%22https%3A%2F%2Fflower-shop-api.victorioussmoke-54c8bd80.westus.azurecontainerapps.io%2Fapi%2FPlant%22%5D) |
+| REST API | [Open Azure API](command:simpleBrowser.show?%5B%22https%3A%2F%2Fflower-shop-api.bluewave-40c6a267.westus.azurecontainerapps.io%2Fapi%2FPlant%22%5D) |
+| MCP Endpoint | `https://flower-shop-api.bluewave-40c6a267.westus.azurecontainerapps.io/mcp` |
 | Azure Portal | [Open Portal](command:simpleBrowser.show?%5B%22https%3A%2F%2Fportal.azure.com%22%5D) |

@@ -1,13 +1,13 @@
 # Azure Deployment Script — Flower Shop
-# Run these commands to recreate the Azure deployment from scratch
+# Uses custom Docker image with embedded dab-config.json (NO storage accounts)
 
-$RG = "flower-shop-rg"
+$RG = "flower-shop-rg2"
 $LOC = "westus"
-$SQL_SERVER = "flower-shop-sql-5723"
+$SQL_SERVER = "flower-shop-sql-8291"
 $SQL_DB = "FlowerShop"
 $SA_PWD = "YourStrong@Passw0rd"
 $CAE = "flower-shop-env"
-$STORAGE = "flowershopst4754"
+$ACR = "flowershopcr8291"
 
 # Resource Group
 az group create --name $RG --location $LOC
@@ -21,17 +21,14 @@ az sql db create --resource-group $RG --server $SQL_SERVER --name $SQL_DB --serv
 dotnet build database\database.sqlproj
 sqlpackage /Action:Publish /SourceFile:database\bin\Debug\database.dacpac /TargetConnectionString:"Server=tcp:$SQL_SERVER.database.windows.net,1433;Database=$SQL_DB;User Id=sqladmin;Password=$SA_PWD;TrustServerCertificate=true;Encrypt=true" /p:BlockOnPossibleDataLoss=false
 
+# Azure Container Registry (custom image with embedded config)
+az acr create --name $ACR --resource-group $RG --sku Basic --admin-enabled true
+az acr build --registry $ACR --image dab-api:latest .
+
 # Container Apps
 az containerapp env create --name $CAE --resource-group $RG --location $LOC
 
-# Storage for DAB config
-az storage account create --name $STORAGE --resource-group $RG --location $LOC --sku Standard_LRS
-$STORAGE_KEY = (az storage account keys list --resource-group $RG --account-name $STORAGE --query "[0].value" -o tsv)
-az storage share create --name dabconfig --account-name $STORAGE --account-key $STORAGE_KEY
-az storage file upload --share-name dabconfig --source dab-config.json --account-name $STORAGE --account-key $STORAGE_KEY
-az containerapp env storage set --name $CAE --resource-group $RG --storage-name dabstorage --azure-file-account-name $STORAGE --azure-file-account-key $STORAGE_KEY --azure-file-share-name dabconfig --access-mode ReadOnly
-
-# Deploy DAB
+# Deploy DAB (custom image from ACR)
 $AZURE_DAB_CONN = "Server=tcp:$SQL_SERVER.database.windows.net,1433;Database=$SQL_DB;User Id=sqladmin;Password=$SA_PWD;TrustServerCertificate=false;Encrypt=true"
-az containerapp create --name flower-shop-api --resource-group $RG --environment $CAE --image mcr.microsoft.com/azure-databases/data-api-builder:1.7.83-rc --target-port 5000 --ingress external --env-vars "DATABASE_CONNECTION_STRING=$AZURE_DAB_CONN" --cpu 0.5 --memory 1.0Gi --min-replicas 1 --max-replicas 1
-az containerapp update --name flower-shop-api --resource-group $RG --yaml containerapp.yaml
+$ACR_PWD = (az acr credential show --name $ACR --query "passwords[0].value" -o tsv)
+az containerapp create --name flower-shop-api --resource-group $RG --environment $CAE --image "$ACR.azurecr.io/dab-api:latest" --registry-server "$ACR.azurecr.io" --registry-username $ACR --registry-password $ACR_PWD --target-port 5000 --ingress external --secrets "db-conn=$AZURE_DAB_CONN" --env-vars "DATABASE_CONNECTION_STRING=secretref:db-conn" --cpu 0.5 --memory 1.0Gi --min-replicas 1 --max-replicas 1

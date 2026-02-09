@@ -165,7 +165,7 @@ Ensure `dab-config.json` enables MCP and uses env vars:
 
 - `docker compose ps` shows all services running
 - SQL container health is **healthy**
-- DAB responds at `http://localhost:5000/health`
+- DAB responds at `http://localhost:5000/health` — open this in the browser to verify DAB is running and show the user it's working
 - MCP Inspector opens via the special URL and lists tools
 
 ---

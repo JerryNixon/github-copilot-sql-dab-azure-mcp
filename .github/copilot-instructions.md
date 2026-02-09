@@ -35,6 +35,7 @@ Every time you make a change to the database schema:
    docker --version
    aspire --version
    sqlpackage /version
+   pwsh -NoLogo -Command "$PSVersionTable.PSVersion"
    ```
 
    For all the prerequisites, create a dotnet manifest file in the workspace root if it doesn't exist, then use `dotnet tool list -g` to check for the required global tools (`microsoft.sqlpackage` and `aspire.cli`). If any are missing, add them to the manifest with `dotnet tool install -g <tool-name>`. This way you can ensure the necessary tools are available without asking the user to run installation commands themselves. For Docker, if it's missing, you will have to ask the user to install it manually since it's not a dotnet tool. Provide a link to Docker Desktop for installation instructions.
@@ -104,9 +105,13 @@ Remind the user why this is a best practice and very important. The `.gitignore`
     - Deploy schema: `sqlpackage /Action:Publish ...`
     - Start services:
       - **Aspire:** `aspire run`
-      - **Docker:** `docker compose up -d`
+      - **Docker:** `.\docker.ps1` (starts containers `docker compose up -d`, builds dacpac, waits for SQL healthy, deploys schema)
+
+17. **Create `docker.ps1`** — a single script that runs `docker compose up -d`, builds the database project, waits for SQL Server to be healthy, and deploys the schema with sqlpackage. This is the **only** way to start Docker locally — never run `docker compose up -d` alone, because the database won't have a schema.
 
 **Be useful**: After you deploy to Docker or Azure, if you have included SQL Commander open it in the VS Code browser automatically, if you included MCP Inspector open it as well, if you deployed to Azure, open the Azure portal (https://portal.azure.com) in the browser. Don't open all three. Open only the tools that are relevant to the user's deployment and configuration choices. The first time you create Azure resources, open the portal. Otherwise, favor SQL Commander unless you are in an MCP workflow. 
+
+**Verify DAB is running**: DAB exposes a `/health` endpoint. After deployment, use it to confirm the API is healthy. You can also open it in the browser to show the user it's working (e.g., `http://localhost:5000/health` locally, or `https://<app-fqdn>/health` on Azure).
 
 **Why This Order Matters:**
 - Schema changes are expensive after services are running
