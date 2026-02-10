@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "jerry-nixon.omnibus-data-api-builder",
-        "ms-mssql.mssql"
+        "ms-mssql.mssql",
+        "mermaidchart.vscode-mermaid-chart"
     ]
 }

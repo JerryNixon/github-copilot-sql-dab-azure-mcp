@@ -1,30 +1,23 @@
--- Seed data for Flower Shop
+/*
+Post-Deployment Script
+This script runs after database schema deployment and seeds initial data
+*/
 
--- Shops
-SET IDENTITY_INSERT [dbo].[Shops] ON;
-INSERT INTO [dbo].[Shops] ([ShopId], [Name], [Location]) VALUES
-(1, N'Bloom & Petal Downtown', N'123 Main Street'),
-(2, N'Bloom & Petal Uptown', N'456 Oak Avenue');
-SET IDENTITY_INSERT [dbo].[Shops] OFF;
+-- Clear existing data (for idempotent deployments)
+DELETE FROM [dbo].[Todos];
 
--- Categories
-SET IDENTITY_INSERT [dbo].[Categories] ON;
-INSERT INTO [dbo].[Categories] ([CategoryId], [Name]) VALUES
-(1, N'Roses'),
-(2, N'Succulents'),
-(3, N'Orchids'),
-(4, N'Ferns');
-SET IDENTITY_INSERT [dbo].[Categories] OFF;
+-- Reset identity seed
+DBCC CHECKIDENT ('[dbo].[Todos]', RESEED, 0);
 
--- Plants
-SET IDENTITY_INSERT [dbo].[Plants] ON;
-INSERT INTO [dbo].[Plants] ([PlantId], [Name], [CategoryId], [Quantity], [Price], [ShopId]) VALUES
-(1, N'Red Rose', 1, 50, 12.99, 1),
-(2, N'White Rose', 1, 30, 14.99, 1),
-(3, N'Echeveria', 2, 25, 8.50, 1),
-(4, N'Jade Plant', 2, 15, 10.00, 2),
-(5, N'Phalaenopsis Orchid', 3, 10, 24.99, 2),
-(6, N'Boston Fern', 4, 20, 15.00, 1),
-(7, N'Pink Rose', 1, 40, 13.50, 2),
-(8, N'Aloe Vera', 2, 35, 7.99, 2);
-SET IDENTITY_INSERT [dbo].[Plants] OFF;
+-- Insert sample data
+INSERT INTO [dbo].[Todos] ([Title], [DueDate], [Owner], [Completed])
+VALUES
+    ('Review pull requests', '2026-02-10', 'sarah.chen@example.com', 0),
+    ('Update documentation', '2026-02-09', 'mike.johnson@example.com', 1),
+    ('Deploy to production', '2026-02-12', 'sarah.chen@example.com', 0),
+    ('Fix login bug', '2026-02-08', 'alex.kumar@example.com', 1),
+    ('Design new feature mockups', '2026-02-15', 'sarah.chen@example.com', 0),
+    ('Code review session', '2026-02-11', 'todo-testuser@jerrynixoncorp.onmicrosoft.com', 0),
+    ('Update dependencies', '2026-02-13', 'todo-testuser@jerrynixoncorp.onmicrosoft.com', 0);
+
+PRINT 'Sample data seeded successfully';

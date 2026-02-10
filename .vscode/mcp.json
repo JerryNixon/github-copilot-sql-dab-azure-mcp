@@ -1,6 +1,6 @@
 {
   "servers": {
-    "flower-shop-db": {
+    "todo-db": {
       "url": "http://localhost:5000/mcp",
       "type": "http"
     }

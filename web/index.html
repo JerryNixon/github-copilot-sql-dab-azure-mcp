@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks</title>
+    <script src="https://alcdn.msauth.net/browser/2.38.1/js/msal-browser.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        header {
+            color: white;
+            margin-bottom: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 1.75rem;
+            font-weight: 300;
+            margin-bottom: 0.25rem;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .user-info {
+            opacity: 0.9;
+            font-size: 0.85rem;
+        }
+
+        .refresh-btn,
+        .login-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+
+        .refresh-btn:hover,
+        .login-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .refresh-btn {
+            padding: 0.5rem 0.75rem;
+        }
+
+        .tasks-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .task-item {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 0.75rem;
+            align-items: start;
+            transition: background 0.2s;
+        }
+
+        .task-item:hover {
+            background: #fafafa;
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            margin-top: 0.125rem;
+        }
+
+        .task-status.completed {
+            background: #10b981;
+            border-color: #10b981;
+            position: relative;
+        }
+
+        .task-status.completed::after {
+            content: '✓';
+            color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 0.95rem;
+            color: #1f2937;
+            margin-bottom: 0.125rem;
+        }
+
+        .task-title.completed {
+            color: #9ca3af;
+            text-decoration: line-through;
+        }
+
+        .task-meta {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .task-owner {
+            padding: 0.25rem 0.625rem;
+            background: #f3f4f6;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: #4b5563;
+            white-space: nowrap;
+            margin-top: 0.125rem;
+        }
+
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: #9ca3af;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>My Tasks</h1>
+                <div class="user-info" id="userInfo">Not signed in</div>
+            </div>
+            <div class="header-right">
+                <button class="refresh-btn" id="refreshBtn">↻</button>
+                <button class="login-btn" id="loginBtn">Sign In</button>
+            </div>
+        </header>
+
+        <div class="tasks-card" id="tasksList">
+            <!-- Tasks will be rendered here -->
+        </div>
+    </div>
+
+    <script>
+        // MSAL Configuration
+        const msalConfig = {
+            auth: {
+                clientId: '0d39df0f-8ae8-4dfd-9d83-9f3687f527b2',
+                authority: 'https://login.microsoftonline.com/eaf341ca-58d3-4d02-93c3-787dfe8e154f',
+                redirectUri: 'http://localhost:5173'
+            },
+            cache: {
+                cacheLocation: 'localStorage',
+                storeAuthStateInCookie: false
+            }
+        };
+
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+        const loginRequest = {
+            scopes: ['User.Read']
+        };
+
+        const API_URL = 'http://localhost:5000';
+        let currentAccount = null;
+        let tasks = [];
+
+        async function fetchTodos() {
+            try {
+                console.log('Fetching todos from API...');
+                const response = await fetch(`${API_URL}/api/Todos`);
+                
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Fetched todos:', data);
+                
+                // DAB returns data in { value: [...] } format
+                tasks = data.value || [];
+                renderTasks();
+            } catch (error) {
+                console.error('Failed to fetch todos:', error);
+                // Fall back to sample data if API fails
+                tasks = [
+                    {
+                        TodoId: 1,
+                        Title: "Review pull requests",
+                        DueDate: "2026-02-10",
+                        Owner: "sarah.chen@example.com",
+                        Completed: false
+                    },
+                    {
+                        TodoId: 2,
+                        Title: "Update documentation",
+                        DueDate: "2026-02-09",
+                        Owner: "mike.johnson@example.com",
+                        Completed: true
+                    }
+                ];
+                renderTasks();
+                alert('Could not connect to API. Showing sample data.\n\nMake sure to run: dab start');
+            }
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasksList');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p>No tasks yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tasks.map(task => `
+                <div class="task-item">
+                    <div class="task-status ${task.Completed ? 'completed' : ''}"></div>
+                    <div class="task-content">
+                        <div class="task-title ${task.Completed ? 'completed' : ''}">${task.Title}</div>
+                        <div class="task-meta">Due ${new Date(task.DueDate).toLocaleDateString()}</div>
+                    </div>
+                    <div class="task-owner">${task.Owner}</div>
+                </div>
+            `).join('');
+        }
+
+        async function handleLogin() {
+            try {
+                console.log('Starting login redirect...');
+                await msalInstance.loginRedirect(loginRequest);
+            } catch (error) {
+                console.error('Login failed:', error);
+                alert('Login error: ' + error.message);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                console.log('Starting logout...');
+                await msalInstance.logoutRedirect({
+                    account: currentAccount
+                });
+            } catch (error) {
+                console.error('Logout failed:', error);
+                alert('Logout error: ' + error.message);
+            }
+        }
+
+        function updateUI() {
+            const loginBtn = document.getElementById('loginBtn');
+            const userInfo = document.getElementById('userInfo');
+
+            if (currentAccount) {
+                userInfo.textContent = currentAccount.name || currentAccount.username;
+                loginBtn.textContent = 'Sign Out';
+                loginBtn.onclick = handleLogout;
+            } else {
+                userInfo.textContent = 'Not signed in';
+                loginBtn.textContent = 'Sign In';
+                loginBtn.onclick = handleLogin;
+            }
+        }
+
+        // Initialize on page load
+        async function initializeApp() {
+            try {
+                console.log('Initializing MSAL...');
+                await msalInstance.initialize();
+                
+                // Handle redirect response (returns after Microsoft login)
+                console.log('Handling redirect...');
+                const response = await msalInstance.handleRedirectPromise();
+                
+                if (response) {
+                    console.log('Login successful:', response.account);
+                    currentAccount = response.account;
+                } else {
+                    console.log('No redirect response, checking for existing session...');
+                    // Check if already logged in
+                    const accounts = msalInstance.getAllAccounts();
+                    console.log('Found accounts:', accounts.length);
+                    if (accounts.length > 0) {
+                        currentAccount = accounts[0];
+                        console.log('Using existing account:', currentAccount);
+                    }
+                }
+                
+                updateUI();
+                await fetchTodos();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                alert('Auth error: ' + error.message);
+            }
+        }
+
+        initializeApp();
+        
+        // Refresh button handler
+        document.getElementById('refreshBtn').addEventListener('click', async () => {
+            console.log('Refresh clicked');
+            await fetchTodos();
+        });
+    </script>
+</body>
+</html>

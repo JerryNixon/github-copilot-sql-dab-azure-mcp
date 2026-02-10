@@ -1,3 +1,17 @@
+# Root .gitignore
+
+# Environment variables
 .env
-**\bin
-**\obj
+*.env
+
+# DAB configuration (may contain secrets in connection strings)
+dab-config.*.json
+
+# Build outputs
+database/bin/
+database/obj/
+**/bin/
+**/obj/
+
+# Logs
+*.log

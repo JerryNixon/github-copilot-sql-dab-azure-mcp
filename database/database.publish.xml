@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <TargetDatabaseName>FlowerShop</TargetDatabaseName>
-    <IncludeCompositeObjects>true</IncludeCompositeObjects>
-    <BlockOnPossibleDataLoss>false</BlockOnPossibleDataLoss>
+    <TargetDatabaseName>TodoDb</TargetDatabaseName>
+    <ProfileVersionNumber>1</ProfileVersionNumber>
   </PropertyGroup>
 </Project>

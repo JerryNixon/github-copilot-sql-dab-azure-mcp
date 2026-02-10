@@ -1,91 +1,66 @@
 {
-  "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.7.83-rc/dab.draft.schema.json",
+  "$schema": "https://github.com/Azure/data-api-builder/releases/download/v1.7.81/dab.draft.schema.json",
   "data-source": {
     "database-type": "mssql",
-    "connection-string": "@env('DATABASE_CONNECTION_STRING')"
+    "connection-string": "@env('DATABASE_CONNECTION_STRING')",
+    "options": {
+      "set-session-context": false
+    }
   },
   "runtime": {
     "rest": {
       "enabled": true,
-      "path": "/api"
+      "path": "/api",
+      "request-body-strict": true
     },
     "graphql": {
-      "enabled": false
+      "enabled": true,
+      "path": "/graphql",
+      "allow-introspection": true
     },
     "mcp": {
       "enabled": true,
       "path": "/mcp"
     },
     "host": {
+      "cors": {
+        "origins": [
+          "http://localhost:5173"
+        ],
+        "allow-credentials": false
+      },
+      "authentication": {
+        "provider": "StaticWebApps"
+      },
       "mode": "development"
     }
   },
   "entities": {
-    "Shop": {
+    "Todos": {
       "source": {
-        "object": "dbo.Shops",
+        "object": "dbo.Todos",
         "type": "table"
+      },
+      "graphql": {
+        "enabled": true,
+        "type": {
+          "singular": "Todo",
+          "plural": "Todos"
+        }
+      },
+      "rest": {
+        "enabled": true
       },
       "permissions": [
         {
           "role": "anonymous",
-          "actions": ["*"]
+          "actions": [
+            {
+              "action": "*"
+            }
+          ]
         }
-      ],
-      "relationships": {
-        "plants": {
-          "cardinality": "many",
-          "target.entity": "Plant",
-          "source.fields": ["ShopId"],
-          "target.fields": ["ShopId"]
-        }
-      }
-    },
-    "Category": {
-      "source": {
-        "object": "dbo.Categories",
-        "type": "table"
-      },
-      "permissions": [
-        {
-          "role": "anonymous",
-          "actions": ["*"]
-        }
-      ],
-      "relationships": {
-        "plants": {
-          "cardinality": "many",
-          "target.entity": "Plant",
-          "source.fields": ["CategoryId"],
-          "target.fields": ["CategoryId"]
-        }
-      }
-    },
-    "Plant": {
-      "source": {
-        "object": "dbo.Plants",
-        "type": "table"
-      },
-      "permissions": [
-        {
-          "role": "anonymous",
-          "actions": ["*"]
-        }
-      ],
-      "relationships": {
-        "category": {
-          "cardinality": "one",
-          "target.entity": "Category",
-          "source.fields": ["CategoryId"],
-          "target.fields": ["CategoryId"]
-        },
-        "shop": {
-          "cardinality": "one",
-          "target.entity": "Shop",
-          "source.fields": ["ShopId"],
-          "target.fields": ["ShopId"]
-        }
-      }
+      ]
     }
   }
 }
