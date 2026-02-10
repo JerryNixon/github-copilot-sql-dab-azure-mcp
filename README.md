@@ -1,342 +1,210 @@
 # TODO App with Entra ID Authentication
 
-A minimal TODO application with Microsoft Entra ID (Azure AD) authentication.
+A minimal TODO application with Microsoft Entra ID authentication, row-level security, and zero custom API code.
 
-## What's Built So Far
+## Security Chain
 
-- ✅ **Web UI**: HTML/CSS/JavaScript TODO viewer with refresh button
-- ✅ **Authentication**: Microsoft Entra ID using MSAL.js
-- ✅ **Database**: SQL Server with Todos table and sample data
-- ✅ **REST API**: Data API Builder (DAB) with anonymous access
-- ✅ **Azure Resources**: Resource group, app registration, test user
-- ✅ **Idempotent Setup**: Scripts for Azure and local provisioning
+```
+User → OAuth → Web → Bearer Token → DAB → SAMI → SQL
+```
+
+1. User signs in via MSAL.js (Entra ID)
+2. Web app acquires `api://<clientId>/access_as_user` token
+3. DAB validates JWT (audience + issuer)
+4. DAB applies database policy: `@item.Owner eq @claims.preferred_username`
+5. DAB authenticates to SQL via System Assigned Managed Identity
+6. SQL returns only that user's rows
+
+> **SQL Commander** uses SQL Auth (admin credentials) for direct database access. It's a dev/admin tool — not user-facing, no Entra ID, no row-level filtering.
 
 ## Architecture
 
 ```mermaid
-flowchart
-    Browser[Web Browser :5173] --> Entra[Entra ID Auth]
-    Entra --> Browser
-    Browser --> DAB[Data API Builder :5000]
-    DAB --> SQL[(SQL Server)]
+flowchart LR
+  Web["Web App"] -->|Bearer Token| API["Data API Builder"]
+  API -->|SAMI| DB[(Azure SQL)]
+  Commander["SQL Commander"] --> DB
 ```
 
-**Key Design:**
-- **Two Servers**: Web server on :5173, DAB API on :5000
-- **No Build Step**: Plain HTML/CSS/JavaScript (no npm, webpack, Vite)
-- **Minimal Dependencies**: Python web server for static files, DAB for API
+## Database Schema
+
+```mermaid
+erDiagram
+    Todos {
+        int TodoId PK "Primary key for a Todo"
+        nvarchar Title "The title of the Todo"
+        date DueDate "When the Todo should be completed"
+        bit Completed "Whether the Todo is finished"
+        nvarchar Owner "Who owns this Todo, matches Entra ID"
+    }
+```
 
 ## Prerequisites
 
-- **Azure CLI** - [Install](https://docs.microsoft.com/cli/azure/install-azure-cli)
-- **Azure Subscription** - Active subscription with permissions to create resources
-- **SQL Server** - LocalDB, SQL Server Express, or Docker
-- **sqlpackage** - Auto-installed by local.ps1 script
-- **Data API Builder** - Auto-installed by local.ps1 script
-- **Python 3.x** - For local web server (or any HTTP server)
-- **PowerShell** - For running setup scripts
+### Local Development
 
-## Setup Instructions
+- [.NET 10+ SDK](https://dotnet.microsoft.com/download)
+- [Aspire CLI](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling) — local orchestration
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (for Entra ID app registration)
+- [Data API Builder](https://learn.microsoft.com/azure/data-api-builder/) — zero-code API
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (included on Windows)
 
-### 1. Login to Azure
+> Run `dotnet tool restore` to install Aspire CLI and DAB from the included tool manifest.
+
+### Azure Deployment
+
+- [.NET 10+ SDK](https://dotnet.microsoft.com/download)
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
+- [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
+- [Data API Builder](https://learn.microsoft.com/azure/data-api-builder/) — zero-code API
+- [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (included on Windows)
+- [SqlPackage](https://learn.microsoft.com/sql/tools/sqlpackage/sqlpackage) — schema deployment
+- Azure subscription with permissions to create resources
+
+> Run `dotnet tool restore` to install DAB and SqlPackage from the included tool manifest.
+
+## Quick Start
+
+### Local Development
 
 ```powershell
 az login
-az account set --subscription "your-subscription-name-or-id"
+./infra/setup-local.ps1          # creates Entra ID app reg, test user, updates config.js + dab-config.json
+aspire run                       # starts SQL Server, DAB, SQL Commander, MCP Inspector
 ```
 
-### 2. Run Azure Setup Script
+Open http://localhost:5173. Aspire Dashboard at http://localhost:15888.
 
-The script creates all Azure resources (idempotent - safe to run multiple times):
+> `setup-local.ps1` only needs to run once. After that, `aspire run` works on its own.
+
+### Deploy to Azure
 
 ```powershell
-.\azure.ps1
+azd env set AZURE_SQL_ADMIN_PASSWORD "YourStrong@Passw0rd"
+azd up                           # provisions + deploys everything
 ```
 
-**What it creates:**
-- Resource Group: `rg-todo-app` (East US)
-- App Registration: `todo-app` (configured as SPA)
-- Test User: `todo-testuser@yourtenant.onmicrosoft.com`
-
-**Output includes:**
-- Client ID (automatically updated in `.env`)
-- Tenant ID (automatically updated in `.env`)
-- Test user credentials
-
-### 3. Setup Local Development
-
-Start SQL Server (if using Docker):
+### Tear Down
 
 ```powershell
-docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=YourStrong@Passw0rd' -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
-```
-
-Run local setup script:
-
-```powershell
-.\local.ps1
-```
-
-**What it does:**
-- Checks SQL Server connection
-- Deploys database schema with sample data
-- Installs Data API Builder CLI
-- Creates DAB configuration (anonymous access)
-- Adds Todos entity to DAB
-
-### 4. Start Services
-
-**Terminal 1 - Data API Builder:**
-```powershell
-dab start
-```
-
-**Terminal 2 - Web Server:**
-```powershell
-cd web
-python -m http.server 5173
-```
-
-### 5. Open the App
-
-Navigate to: http://localhost:5173
-
-## Testing Authentication
-
-1. Click **Sign In** button
-2. Browser redirects to Microsoft login
-3. Use test credentials:
-   - **Username**: `todo-testuser@yourtenant.onmicrosoft.com`
-   - **Password**: `TodoTest123!`
-4. After successful login, you'll be redirected back to the app
-5. Your name appears in the header
-6. Click **Sign Out** to log out
-
-## Testing the REST API
-
-1. Click the **↻ Refresh** button to reload todos from the database
-2. Open browser DevTools (F12) → Network tab to see API calls
-3. Direct API access: http://localhost:5000/api/Todos
-4. Swagger UI: http://localhost:5000/swagger (if enabled in DAB config)
-
-**API Response Format (DAB):**
-```json
-{
-  "value": [
-    {
-      "TodoId": 1,
-      "Title": "Review pull requests",
-      "DueDate": "2026-02-10",
-      "Owner": "sarah.chen@example.com",
-      "Completed": false
-    }
-  ]
-}
+azd down                         # deletes Azure resources + app registration + test user
 ```
 
 ## Project Structure
 
 ```
-github-copilot2/
-├── azure.ps1              # Azure resource provisioning
-├── local.ps1              # Local development setup
-├── dab-config.json        # Data API Builder configuration
-├── .env                   # All configuration (connection strings, Entra ID, API URL)
-├── .gitignore             # Protects .env and secrets
+├── azure.yaml                    # azd project config (must be at root)
+├── .aspire/
+│   └── apphost.cs                # Aspire orchestration (local dev only)
+├── api/
+│   ├── dab-config.json           # DAB configuration file
+│   └── Dockerfile                # Custom DAB image for Azure
 ├── database/
-│   ├── database.sqlproj   # SQL Database project
-│   ├── Tables/
-│   │   └── Todos.sql      # Todos table schema
-│   └── Scripts/
-│       └── PostDeployment.sql  # Sample data
+│   ├── database.sqlproj           # SQL Database Project
+│   ├── Tables/Todos.sql           # Table schema
+│   └── Scripts/PostDeployment.sql # Seed data
+├── infra/
+│   ├── main.bicep                # Subscription-scope entry point
+│   ├── resources.bicep           # All Azure resources
+│   ├── main.parameters.json      # azd parameter mappings
+│   ├── setup-local.ps1           # Local dev setup (app reg, scopes, test user, dab configure)
+│   ├── pre-up.ps1                # azd hook: Entra ID setup before Bicep
+│   ├── post-up.ps1               # azd hook: deploy after Bicep (schema, ACR, container, web)
+│   └── post-down.ps1             # azd hook: cleanup app registration + test user
 ├── web/
-│   ├── index.html         # Main app (MSAL.js + API integration)
-│   └── .gitignore         # Additional web-specific ignores
-└── README.md              # This file
+│   ├── index.html                # SPA shell
+│   ├── styles.css                # Stylesheet
+│   ├── config.js                 # MSAL + API config (placeholders in repo)
+│   └── app.js                    # Auth + API logic (bearer token, MSAL)
+└── .vscode/
+    └── mcp.json                  # MCP server for Copilot database access
 ```
 
-## Configuration Files
+## How Scripts Work
 
-### `.env` (root)
-**Single source of truth for all configuration:**
-```
-# Database (used by DAB)
-DATABASE_CONNECTION_STRING=Server=localhost;Database=TodoDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+### Local setup (`infra/setup-local.ps1`)
 
-# Entra ID Configuration (for reference - hardcoded in web/index.html)
-ENTRA_CLIENT_ID=<your-client-id>
-ENTRA_TENANT_ID=<your-tenant-id>
-ENTRA_REDIRECT_URI=http://localhost:5173
+One-time setup for local dev. No `azd` needed — uses Azure CLI only:
 
-# API (for reference - hardcoded in web/index.html)
-API_URL=http://localhost:5000
-```
+1. App registration with SPA redirect + `access_as_user` API scope
+2. Pre-authorizes SPA (no consent prompt)
+3. Runs `dab configure` to write real audience/issuer into `dab-config.json`
+4. Writes `config.js` with real clientId/tenantId
+5. Creates test user
 
-**Note:** Entra ID and API values are currently hardcoded in `web/index.html` for simplicity. The `.env` file serves as documentation and is used by DAB for database connection.
+### Pre-up (`infra/pre-up.ps1`)
 
-**To update hardcoded values in `web/index.html`:**
-1. After running `azure.ps1`, note the Client ID and Tenant ID
-2. Edit `web/index.html` and update the `msalConfig` object:
-   ```javascript
-   const msalConfig = {
-       auth: {
-           clientId: 'your-client-id-here',
-           authority: 'https://login.microsoftonline.com/your-tenant-id-here',
-           redirectUri: 'http://localhost:5173'
-       },
-       ...
-   };
-   ```
+`azd` hook — runs before Bicep during `azd up`. Same Entra ID setup as `setup-local.ps1`, plus stores values via `azd env set` for post-up.
 
-### `dab-config.json`
-Data API Builder configuration with Todos entity and anonymous access.
+### Post-up (`infra/post-up.ps1`)
 
-**⚠️ Important:** `.env` is excluded from git via `.gitignore`
+Runs after Bicep. Only consumes stored values — never creates Entra ID resources:
 
-## Azure Resources Created
+1. Opens SQL firewall for deployment
+2. Deploys database schema (`sqlpackage`)
+3. Sets Entra admin, creates SAMI database user
+4. Updates seed data with test user UPN
+5. Runs `dab configure` to update auth values
+6. Builds + pushes DAB image to ACR
+7. Updates container app with custom image
+8. Adds Azure redirect URI to app registration
+9. Generates `config.js` with Azure URLs, deploys web files
 
-| Resource Type | Name | Purpose |
-|--------------|------|---------|
-| Resource Group | `rg-todo-app` | Container for future resources (SQL, etc.) |
-| App Registration | `todo-app` | Entra ID SPA authentication |
-| Test User | `todo-testuser@...` | For testing authentication |
+## Configuration
 
-### App Registration Details
+Both `config.js` and `dab-config.json` ship with placeholder values (`__CLIENT_ID__`, `__AUDIENCE__`, etc.). The hooks replace these with real values. `apphost.cs` checks for placeholders at startup and fails fast if they haven't been replaced.
 
-- **Platform**: Single-Page Application (SPA)
-- **Redirect URI**: http://localhost:5173
-- **Authentication**: Auth code flow with PKCE (MSAL.js SPA)
-- **Scopes**: User.Read
+All secrets live in `.azure/` (git-ignored). Set via `azd env set`.
 
-## Troubleshooting
+## Azure Resources
 
-### SQL Server Connection Failed
+| Resource | Name Pattern | Purpose |
+|----------|-------------|---------|
+| Resource Group | `rg-{token}-{env}` | Container |
+| Azure SQL Server | `sql-svr-{token}` | Database server |
+| Azure SQL Database | `sql-db` | App database |
+| Container Registry | `acr{token}` | DAB image |
+| Container Apps Env | `aca-cae-{token}` | Container hosting |
+| Container App (DAB) | `aca-dab-{token}` | API (SAMI to SQL) |
+| Container App (Cmdr) | `aca-cmdr-{token}` | SQL Commander |
+| App Service Plan | `web-app-plan-{token}` | B1 Linux |
+| Web App | `web-app-{token}` | Static frontend |
+| App Registration | `app-{env}` | Entra ID SPA |
+| Test User | `testuser-{env}@...` | Testing |
 
-**Error:** "Login failed for user 'sa'"
+> `{token}` = `uniqueString(subscription, env, location)`
 
-**Fix:**
-1. Make sure SQL Server is running
-2. Verify credentials in `.env` file
-3. For Docker: Use the password from the docker run command
+## Testing
 
-### DAB API Returns 404
+Sign in with the test user created by setup:
+- **Username**: `testuser-{env}@yourtenant.onmicrosoft.com`
+- **Password**: `TodoTest123!`
 
-**Error:** "Could not connect to API"
-
-**Fix:**
-1. Make sure DAB is running: `dab start`
-2. Check DAB is on port 5000: http://localhost:5000/api/Todos
-3. Verify `dab-config.json` exists and has Todos entity
-
-### CORS Error in Browser
-
-**Error:** "Access to fetch at 'http://localhost:5000' has been blocked by CORS"
-
-**Fix:**
-DAB config should have CORS enabled for http://localhost:5173. Re-run `.\local.ps1` to regenerate config.
-
-### "Cross-origin token redemption" Error
-
-This means the app registration is configured as "Web" instead of "SPA". 
-
-**Fix:**
-```powershell
-.\azure.ps1  # Script automatically updates to SPA platform
-```
-
-### Browser Shows "Not signed in" After Login
-
-1. Open browser DevTools (F12)
-2. Go to Console tab
-3. Look for error messages
-4. Common causes:
-   - App registration not configured as SPA
-   - Redirect URI mismatch
-   - Browser blocking popups/redirects
-
-### Can't Find App Registration in Azure Portal
-
-App registrations are tenant-level resources, not in resource groups.
-
-**To find:**
-1. Go to **Microsoft Entra ID** (not Resource Groups)
-2. Click **App registrations**
-3. Look for **todo-app**
-
-Or run:
-```powershell
-az ad app list --display-name "todo-app" --query "[].{Name:displayName, ClientId:appId}" -o table
-```
+Only todos where `Owner` matches the signed-in user's UPN are returned.
 
 ## Authentication Flow
 
 ```mermaid
 sequenceDiagram
-    participant Browser
-    participant App
-    participant MSAL
+    participant User
+    participant Web
     participant Entra ID
-    
-    Browser->>App: Load index.html
-    App->>MSAL: Initialize
-    MSAL->>MSAL: Check for existing session
-    MSAL->>App: Return account or null
-    Browser->>App: Click Sign In
-    App->>MSAL: loginRedirect()
-    MSAL->>Entra ID: Redirect to login
-    Entra ID->>Browser: Show login form
-    Browser->>Entra ID: Submit credentials
-    Entra ID->>App: Redirect with token
-    App->>MSAL: handleRedirectPromise()
-    MSAL->>App: Return account
-    App->>Browser: Update UI with user name
-```
+    participant DAB
+    participant SQL
 
-## Next Steps (Coming Soon)
-
-1. **Owner-based Filtering** - Filter todos by logged-in user email
-2. **Azure Deployment** - Deploy SQL Server and DAB to Azure
-3. **Authentication for DAB** - Replace anonymous access with Entra ID token validation
-4. **CRUD Operations** - Add create, update, delete functionality
-
-## Security Notes
-
-- **Never commit `.env`** - Contains sensitive IDs (protected by `.gitignore`)
-- **Test user password** - Change in production environments
-- **Localhost only** - Current setup only works on `http://localhost:5173`
-- **Production deployment** - Requires updating redirect URIs in app registration
-
-## Development Commands
-
-```powershell
-# Azure setup (idempotent)
-.\azure.ps1
-
-# Local setup (deploy database, configure DAB)
-.\local.ps1
-
-# Start Data API Builder
-dab start
-
-# Start web server
-cd web; python -m http.server 5173
-
-# Build database project
-dotnet build database/database.sqlproj
-
-# Deploy database manually
-sqlpackage /Action:Publish /SourceFile:database/bin/Debug/database.dacpac /TargetConnectionString:"Server=localhost;Database=TodoDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
-
-# Test API directly
-curl http://localhost:5000/api/Todos
-
-# View app registration
-az ad app show --id <client-id>
-
-# Clean up Azure resources
-az group delete --name rg-todo-app --yes --no-wait
+    User->>Web: Click Sign In
+    Web->>Entra ID: MSAL loginRedirect()
+    Entra ID->>Web: JWT (preferred_username claim)
+    Web->>DAB: GET /api/Todos + Bearer token
+    DAB->>DAB: Validate JWT (audience + issuer)
+    DAB->>DAB: Apply policy (Owner = preferred_username)
+    DAB->>SQL: SELECT WHERE Owner = 'user@tenant'
+    SQL->>DAB: Filtered rows
+    DAB->>Web: JSON response
+    Web->>User: Display todos
 ```
 
 ## License
 
-This is a demonstration project for learning purposes.
+Demonstration project for learning purposes.

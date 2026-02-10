@@ -1,0 +1,20 @@
+# Azure Developer CLI (azd) project configuration
+name: todo-app
+
+infra:
+  provider: bicep
+  path: infra
+
+hooks:
+  preprovision:
+    windows:
+      shell: pwsh
+      run: infra/pre-up.ps1
+  postprovision:
+    windows:
+      shell: pwsh
+      run: infra/post-up.ps1
+  postdown:
+    windows:
+      shell: pwsh
+      run: infra/post-down.ps1

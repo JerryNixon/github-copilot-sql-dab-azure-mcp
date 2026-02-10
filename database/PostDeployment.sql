@@ -17,7 +17,7 @@ VALUES
     ('Deploy to production', '2026-02-12', 'sarah.chen@example.com', 0),
     ('Fix login bug', '2026-02-08', 'alex.kumar@example.com', 1),
     ('Design new feature mockups', '2026-02-15', 'sarah.chen@example.com', 0),
-    ('Code review session', '2026-02-11', 'todo-testuser@jerrynixoncorp.onmicrosoft.com', 0),
-    ('Update dependencies', '2026-02-13', 'todo-testuser@jerrynixoncorp.onmicrosoft.com', 0);
+    ('Code review session', '2026-02-11', 'testuser@example.com', 0),
+    ('Update dependencies', '2026-02-13', 'testuser@example.com', 0);
 
 PRINT 'Sample data seeded successfully';

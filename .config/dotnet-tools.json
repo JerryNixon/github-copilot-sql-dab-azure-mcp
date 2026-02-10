@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "aspire.cli": {
+      "version": "9.4.2",
+      "commands": [
+        "aspire"
+      ]
+    },
+    "microsoft.dataapibuilder": {
+      "version": "1.7.81-rc",
+      "commands": [
+        "dab"
+      ]
+    },
+    "microsoft.sqlpackage": {
+      "version": "162.4.92",
+      "commands": [
+        "sqlpackage"
+      ]
+    }
+  }
+}

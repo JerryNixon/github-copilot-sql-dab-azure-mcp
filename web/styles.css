@@ -1,0 +1,157 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+
+.container {
+    max-width: 650px;
+    margin: 0 auto;
+}
+
+header {
+    color: white;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left h1 {
+    font-size: 1.75rem;
+    font-weight: 300;
+    margin-bottom: 0.25rem;
+}
+
+.header-right {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.user-info {
+    opacity: 0.9;
+    font-size: 0.85rem;
+}
+
+.refresh-btn,
+.login-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+}
+
+.refresh-btn:hover,
+.login-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.refresh-btn {
+    padding: 0.5rem 0.75rem;
+}
+
+.tasks-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+
+.task-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f0f0f0;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem;
+    align-items: start;
+    transition: background 0.2s;
+}
+
+.task-item:hover {
+    background: #fafafa;
+}
+
+.task-item:last-child {
+    border-bottom: none;
+}
+
+.task-status {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    margin-top: 0.125rem;
+}
+
+.task-status.completed {
+    background: #10b981;
+    border-color: #10b981;
+    position: relative;
+}
+
+.task-status.completed::after {
+    content: '✓';
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+}
+
+.task-content {
+    flex: 1;
+}
+
+.task-title {
+    font-size: 0.95rem;
+    color: #1f2937;
+    margin-bottom: 0.125rem;
+}
+
+.task-title.completed {
+    color: #9ca3af;
+    text-decoration: line-through;
+}
+
+.task-meta {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.task-owner {
+    padding: 0.25rem 0.625rem;
+    background: #f3f4f6;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: #4b5563;
+    white-space: nowrap;
+    margin-top: 0.125rem;
+}
+
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+    color: #9ca3af;
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    opacity: 0.3;
+}
