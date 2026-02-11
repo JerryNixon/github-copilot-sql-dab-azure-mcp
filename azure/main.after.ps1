@@ -21,6 +21,13 @@ $clientId          = $env:AZURE_CLIENT_ID
 
 $sqlConn = "Server=tcp:$sqlServerFqdn,1433;Database=$sqlDb;User Id=$sqlAdminUser;Password=$sqlAdminPassword;Encrypt=true;TrustServerCertificate=false"
 
+# Ensure SqlServer module (Invoke-Sqlcmd) is available
+if (-not (Get-Module -ListAvailable -Name SqlServer)) {
+    Write-Host "Installing SqlServer module..." -ForegroundColor Yellow
+    Install-Module SqlServer -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop | Out-Null
+}
+Import-Module SqlServer -DisableNameChecking -ErrorAction Stop
+
 # ── 1. Open SQL firewall for local machine ──
 
 Write-Host "Adding client IP to SQL firewall..." -ForegroundColor Yellow
@@ -35,14 +42,9 @@ Write-Host "Firewall rule added ($myIp)" -ForegroundColor Green
 
 # ── 2. Deploy database schema ──
 
-Write-Host "Building database project..." -ForegroundColor Yellow
-dotnet build database/database.sqlproj | Out-Null
-
 Write-Host "Deploying schema..." -ForegroundColor Yellow
-sqlpackage /Action:Publish `
-    /SourceFile:database/bin/Debug/database.dacpac `
-    /TargetConnectionString:"$sqlConn" `
-    /p:BlockOnPossibleDataLoss=false | Out-Null
+$schemaSql = Get-Content -Path "database.sql" -Raw
+Invoke-Sqlcmd -ServerInstance $sqlServerFqdn -Database $sqlDb -ConnectionString $sqlConn -Query $schemaSql
 Write-Host "Schema deployed" -ForegroundColor Green
 
 # ── 2b. Set Entra admin on SQL Server ──

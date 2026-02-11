@@ -3,18 +3,18 @@ name: todo-app
 
 infra:
   provider: bicep
-  path: infra
+  path: azure
 
 hooks:
   preprovision:
     windows:
       shell: pwsh
-      run: infra/pre-up.ps1
+      run: azure/entra-setup.ps1
   postprovision:
     windows:
       shell: pwsh
-      run: infra/post-up.ps1
+      run: azure/main.after.ps1
   postdown:
     windows:
       shell: pwsh
-      run: infra/post-down.ps1
+      run: azure/entra-teardown.ps1

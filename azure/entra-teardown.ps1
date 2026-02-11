@@ -3,8 +3,9 @@
 
 $ErrorActionPreference = "Stop"
 
-$envName = $env:AZURE_ENV_NAME
-$appName = "app-$envName"
+$isAzd = [bool]$env:AZURE_ENV_NAME
+$envName = if ($isAzd) { $env:AZURE_ENV_NAME } else { "local" }
+$appName = if ($isAzd) { "app-$envName" } else { "todo-$envName" }
 
 # ── 1. Delete app registration ──
 

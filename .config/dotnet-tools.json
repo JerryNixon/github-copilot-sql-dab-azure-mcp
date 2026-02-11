@@ -2,12 +2,6 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "aspire.cli": {
-      "version": "9.4.2",
-      "commands": [
-        "aspire"
-      ]
-    },
     "microsoft.dataapibuilder": {
       "version": "1.7.81-rc",
       "commands": [

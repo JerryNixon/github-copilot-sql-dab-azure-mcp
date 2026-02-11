@@ -1,32 +1,76 @@
-# TODO App with Entra ID Authentication
+# Simple Todo App with Entra ID Authentication
 
-A minimal TODO application with Microsoft Entra ID authentication, row-level security, and zero custom API code.
+A minimal todo app with Microsoft Entra ID auth, row-level security, and zero custom API code.
 
-## Security Chain
-
-```
-User → OAuth → Web → Bearer Token → DAB → SAMI → SQL
-```
-
-1. User signs in via MSAL.js (Entra ID)
-2. Web app acquires `api://<clientId>/access_as_user` token
-3. DAB validates JWT (audience + issuer)
-4. DAB applies database policy: `@item.Owner eq @claims.preferred_username`
-5. DAB authenticates to SQL via System Assigned Managed Identity
-6. SQL returns only that user's rows
-
-> **SQL Commander** uses SQL Auth (admin credentials) for direct database access. It's a dev/admin tool — not user-facing, no Entra ID, no row-level filtering.
-
-## Architecture
+## Overview
 
 ```mermaid
-flowchart LR
-  Web["Web App"] -->|Bearer Token| API["Data API Builder"]
-  API -->|SAMI| DB[(Azure SQL)]
-  Commander["SQL Commander"] --> DB
+flowchart TD
+    Reg["Entra ID | App Registration"]
+    Web["Web App (SPA)"]:::blue
+    API["Data API Builder"]:::blue
+    DB[(Azure SQL)]:::blue
+    Commander["SQL Commander"]
+    
+    Reg --> Web
+    Reg --> API
+    Web --> API
+    API -->|SAMI| DB
+    Commander -->|SQL Auth| DB
+    
+    classDef blue fill:#0078d4,stroke:#005a9e,color:#fff
 ```
 
+ * **Web App**: SPA using Entra ID (OAuth) for auth
+ * **Data API Builder**: Zero-code API with Entra ID (OAuth) for auth
+ * **SQL Server (local)**: Database with SQL Authentication
+ * **Azure SQL (Azure)**: Database with Entra ID (SAMI) for auth
+
+## How does authentication flow?
+
+```mermaid
+sequenceDiagram
+    autonumber
+    box EntraID
+        participant Reg as App Registration
+    end
+    actor User
+
+    box Azure Container Apps
+        participant Web
+        participant DAB as API
+    end
+    participant DB as SQL
+
+    User->>Web: Initiate login
+    Web->>User: Redirect to Login UI
+    User->>Reg: Login UI
+    Reg-->>User: Redirect with auth code
+    User->>Web: Redirect with auth code
+    note over User,Web: User authentication complete
+
+    Web->>Reg: Send auth code (token request)
+    Reg-->>Web: Return token
+    note over Web: Web has access token, can call API
+
+    Web->>DAB: Request (Token)
+    DAB-->>DAB: Validate Token
+    note over DAB: Access granted
+    DAB-->>DAB: Apply database policy
+    DAB->>DB: Query (SAMI)
+    DB-->>DAB: Data
+    DAB-->>Web: Response (Data)
+```
+
+- **User -> Web** auth is Entra Id (OAuth) via interaction (login UI)
+- **Web -> API*** auth is Entra Id (OAuth) via token in header
+- **API** applies row-level security policy: `@item.Owner eq @claims.preferred_username`
+- **API -> SQL Server (local)** auth is via SQL Authentication
+- **API -> Azure SQL (Azure)** auth is via System Assigned Managed Identity (SAMI)
+
 ## Database Schema
+
+This demo has just one table, `Todos`. Each todo is owned by a user, and the API only returns todos where the `Owner` column matches the signed-in user's UPN (for example: test-user@domain.com) which is enforced via DAB permissions policy.
 
 ```mermaid
 erDiagram
@@ -39,53 +83,63 @@ erDiagram
     }
 ```
 
-## Prerequisites
+## Prepare for the Demo
 
-### Local Development
+### Local Prerequisites
 
 - [.NET 10+ SDK](https://dotnet.microsoft.com/download)
-- [Aspire CLI](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling) — local orchestration
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (for Entra ID app registration)
 - [Data API Builder](https://learn.microsoft.com/azure/data-api-builder/) — zero-code API
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (included on Windows)
 
-> Run `dotnet tool restore` to install Aspire CLI and DAB from the included tool manifest.
+> Run `dotnet tool restore` to install DAB from the included tool manifest.
 
-### Azure Deployment
+### Azure Prerequisites
 
 - [.NET 10+ SDK](https://dotnet.microsoft.com/download)
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
 - [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 - [Data API Builder](https://learn.microsoft.com/azure/data-api-builder/) — zero-code API
 - [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (included on Windows)
-- [SqlPackage](https://learn.microsoft.com/sql/tools/sqlpackage/sqlpackage) — schema deployment
 - Azure subscription with permissions to create resources
 
-> Run `dotnet tool restore` to install DAB and SqlPackage from the included tool manifest.
+> Run `dotnet tool restore` to install DAB from the included tool manifest.
 
-## Quick Start
+### Set up Microsoft Entra (local + Azure)
 
-### Local Development
+Creates the app registration, scope, test user, and writes auth values into config files.
+
+```powershell
+az login
+./infra/setup-local.ps1
+```
+
+### Tear down Microsoft Entra (local assets)
+
+```powershell
+az login
+./infra/post-down.ps1
+```
+
+## Quick Start A (Local)
 
 ```powershell
 az login
 ./infra/setup-local.ps1          # creates Entra ID app reg, test user, updates config.js + dab-config.json
-aspire run                       # starts SQL Server, DAB, SQL Commander, MCP Inspector
+dotnet run --project apphost     # starts SQL Server, DAB, SQL Commander (SQL Auth locally)
 ```
 
-Open http://localhost:5173. Aspire Dashboard at http://localhost:15888.
+> Note: `entra-setup.ps1` is only required the FIRST time you run (same with az login). 
 
-> `setup-local.ps1` only needs to run once. After that, `aspire run` works on its own.
-
-### Deploy to Azure
+## Quick Start B (Azure)
 
 ```powershell
 azd env set AZURE_SQL_ADMIN_PASSWORD "YourStrong@Passw0rd"
 azd up                           # provisions + deploys everything
 ```
 
-### Tear Down
+### Tear Down Azure Resources (when you are done)
 
 ```powershell
 azd down                         # deletes Azure resources + app registration + test user
@@ -94,58 +148,51 @@ azd down                         # deletes Azure resources + app registration + 
 ## Project Structure
 
 ```
-├── azure.yaml                    # azd project config (must be at root)
-├── .aspire/
-│   └── apphost.cs                # Aspire orchestration (local dev only)
 ├── api/
 │   ├── dab-config.json           # DAB configuration file
 │   └── Dockerfile                # Custom DAB image for Azure
-├── database/
-│   ├── database.sqlproj           # SQL Database Project
-│   ├── Tables/Todos.sql           # Table schema
-│   └── Scripts/PostDeployment.sql # Seed data
-├── infra/
+├── apphost/
+│   ├── apphost.csproj            # Aspire AppHost project
+│   └── Program.cs                # Aspire orchestration (local dev only)
+├── azure/
+│   ├── entra-setup.ps1           # Entra ID setup (app reg, scopes, test user, dab configure)
+│   ├── entra-teardown.ps1        # azd hook: cleanup app registration + test user
 │   ├── main.bicep                # Subscription-scope entry point
-│   ├── resources.bicep           # All Azure resources
 │   ├── main.parameters.json      # azd parameter mappings
-│   ├── setup-local.ps1           # Local dev setup (app reg, scopes, test user, dab configure)
-│   ├── pre-up.ps1                # azd hook: Entra ID setup before Bicep
-│   ├── post-up.ps1               # azd hook: deploy after Bicep (schema, ACR, container, web)
-│   └── post-down.ps1             # azd hook: cleanup app registration + test user
+│   ├── main.after.ps1            # azd hook: deploy after Bicep (schema, ACR, container, web)
+│   └── resources.bicep           # All Azure resources
+├── azure.yaml                    # azd project config (must be at root)
+├── database.sql                  # Database schema (tables + seed data)
 ├── web/
+│   ├── app.js                    # UI layer (rendering, events, escapeHtml)
+│   ├── auth.js                   # MSAL auth (login, logout, token)
+│   ├── config.js                 # Unique config (placeholders in repo)
+│   ├── dab.js                    # DAB data layer (fetch, create, toggle, delete)
 │   ├── index.html                # SPA shell
-│   ├── styles.css                # Stylesheet
-│   ├── config.js                 # MSAL + API config (placeholders in repo)
-│   └── app.js                    # Auth + API logic (bearer token, MSAL)
-└── .vscode/
-    └── mcp.json                  # MCP server for Copilot database access
+│   └── styles.css                # Stylesheet
 ```
 
 ## How Scripts Work
 
-### Local setup (`infra/setup-local.ps1`)
+### Entra ID setup (`azure/entra-setup.ps1`)
 
-One-time setup for local dev. No `azd` needed — uses Azure CLI only:
+One script for both local and cloud. Run directly for local dev; `azd up` calls it via the `preprovision` hook in `azure.yaml`. Auto-detects context from `AZURE_ENV_NAME` env var (set by azd; absent = local).
 
 1. App registration with SPA redirect + `access_as_user` API scope
 2. Pre-authorizes SPA (no consent prompt)
 3. Runs `dab configure` to write real audience/issuer into `dab-config.json`
 4. Writes `config.js` with real clientId/tenantId
-5. Creates test user
+5. Creates test user and assigns `sample-role-1`
 
-### Pre-up (`infra/pre-up.ps1`)
-
-`azd` hook — runs before Bicep during `azd up`. Same Entra ID setup as `setup-local.ps1`, plus stores values via `azd env set` for post-up.
-
-### Post-up (`infra/post-up.ps1`)
+### Post-provision (`azure/main.after.ps1`)
 
 Runs after Bicep. Only consumes stored values — never creates Entra ID resources:
 
 1. Opens SQL firewall for deployment
-2. Deploys database schema (`sqlpackage`)
+2. Deploys database schema (`database.sql` via `Invoke-Sqlcmd`)
 3. Sets Entra admin, creates SAMI database user
-4. Updates seed data with test user UPN
-5. Runs `dab configure` to update auth values
+4. Assigns seed data to test user
+5. Runs `dab configure` to set audience/issuer for Azure
 6. Builds + pushes DAB image to ACR
 7. Updates container app with custom image
 8. Adds Azure redirect URI to app registration
@@ -153,9 +200,10 @@ Runs after Bicep. Only consumes stored values — never creates Entra ID resourc
 
 ## Configuration
 
-Both `config.js` and `dab-config.json` ship with placeholder values (`__CLIENT_ID__`, `__AUDIENCE__`, etc.). The hooks replace these with real values. `apphost.cs` checks for placeholders at startup and fails fast if they haven't been replaced.
-
-All secrets live in `.azure/` (git-ignored). Set via `azd env set`.
+- `config.js` and `dab-config.json` are written with real client/tenant/audience values by `entra-setup.ps1`; only `apiUrlAzure` remains a placeholder until Azure deploy.
+- AppHost fails fast only if `__CLIENT_ID__` or `__AUDIENCE__` remain; it does not block on the `apiUrlAzure` placeholder.
+- CORS in `dab-config.json` includes `http://localhost:5173` and the baked-in Azure web host; update the host if you change the web app name.
+- All secrets live in `.azure/` (git-ignored). Set via `azd env set`.
 
 ## Azure Resources
 
@@ -182,28 +230,6 @@ Sign in with the test user created by setup:
 - **Password**: `TodoTest123!`
 
 Only todos where `Owner` matches the signed-in user's UPN are returned.
-
-## Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Web
-    participant Entra ID
-    participant DAB
-    participant SQL
-
-    User->>Web: Click Sign In
-    Web->>Entra ID: MSAL loginRedirect()
-    Entra ID->>Web: JWT (preferred_username claim)
-    Web->>DAB: GET /api/Todos + Bearer token
-    DAB->>DAB: Validate JWT (audience + issuer)
-    DAB->>DAB: Apply policy (Owner = preferred_username)
-    DAB->>SQL: SELECT WHERE Owner = 'user@tenant'
-    SQL->>DAB: Filtered rows
-    DAB->>Web: JSON response
-    Web->>User: Display todos
-```
 
 ## License
 

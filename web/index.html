@@ -21,11 +21,19 @@
             </div>
         </header>
 
+        <form class="add-form" id="addForm" style="display:none">
+            <input type="text" id="newTitle" placeholder="What needs to be done?" required>
+            <input type="date" id="newDueDate">
+            <button type="submit" class="add-btn">Add</button>
+        </form>
+
         <div class="tasks-card" id="tasksList">
             <!-- Tasks will be rendered here -->
         </div>
     </div>
 
+    <script src="auth.js"></script>
+    <script src="dab.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

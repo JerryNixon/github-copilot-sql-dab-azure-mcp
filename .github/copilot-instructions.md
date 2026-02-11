@@ -178,6 +178,12 @@ Nothing is added silently. Every expansion is a conscious, user-approved decisio
 - **DB Auth (local):** SQL Auth with single admin user
 - **DB Auth (Azure):** System Assigned Managed Identity (MSI)
 
+### Authentication (Entra ID — When Requested)
+- **Provider:** Always use `"EntraId"` — `"AzureAD"` is deprecated
+- **Token Version:** Always set `requestedAccessTokenVersion` to `2` on the app registration (via Graph API PATCH). Default (`null`) issues v1 tokens with incompatible issuer format.
+- **Audience:** Use bare Application (client) ID (e.g., `"00c6ca6d-..."`) — NEVER use `api://` prefix. v2.0 tokens emit bare GUID as `aud` claim.
+- **Issuer:** Must end with `/v2.0` (e.g., `https://login.microsoftonline.com/{tenant}/v2.0`)
+
 ### AI Agents
 - **Local:** Microsoft Copilot
 - **Cloud:** Azure AI Foundry

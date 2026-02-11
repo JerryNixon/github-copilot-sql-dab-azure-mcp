@@ -1,55 +1,50 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 
-#:sdk Aspire.AppHost.Sdk@13.0.0
-#:package Aspire.Hosting.SqlServer@13.0.0
-#:package CommunityToolkit.Aspire.Hosting.SqlDatabaseProjects@9.8.1-beta.420
-#:package CommunityToolkit.Aspire.Hosting.Azure.DataApiBuilder@9.8.1-beta.420
-#:package CommunityToolkit.Aspire.Hosting.McpInspector@9.8.0
-
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Fail fast if config.js has placeholder values
-var configPath = Path.GetFullPath(@"web\config.js");
+var configPath = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, @"..\web\config.js"));
 if (File.Exists(configPath) && File.ReadAllText(configPath).Contains("__CLIENT_ID__"))
 {
     throw new InvalidOperationException(
-        "web/config.js has placeholder values. Run: azd hooks run preprovision");
+        "web/config.js has placeholder values. Run: ./azure/entra-setup.ps1");
 }
 
 // Fail fast if dab-config.json has placeholder values
-var dabConfigPath = Path.GetFullPath(@"api\dab-config.json");
+var dabConfigPath = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, @"..\api\dab-config.json"));
 if (File.Exists(dabConfigPath) && File.ReadAllText(dabConfigPath).Contains("__AUDIENCE__"))
 {
     throw new InvalidOperationException(
-        "api/dab-config.json has placeholder values. Run: azd hooks run preprovision");
+        "api/dab-config.json has placeholder values. Run: ./azure/entra-setup.ps1");
 }
 
 var options = new
 {
     SqlDatabase = "TodoDb",
-    DabConfig = @"Api\dab-config.json",
+    DabConfig = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, @"..\api\dab-config.json")),
+    WebRoot = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, @"..\web")),
     DabImage = "1.7.83-rc",
     SqlCmdrImage = "latest"
 };
 
+var sqlPassword = builder.AddParameter("sql-password", secret: true);
+
 var sqlServer = builder
-    .AddSqlServer("sql-server")
+    .AddSqlServer("sql-server", sqlPassword)
     .WithDataVolume("sql-data")
     .WithEnvironment("ACCEPT_EULA", "Y")
     .WithLifetime(ContainerLifetime.Persistent);
 
 var sqlDatabase = sqlServer
-    .AddDatabase(options.SqlDatabase);
+    .AddDatabase(options.SqlDatabase)
+    .WithCreationScript(File.ReadAllText(Path.Combine(builder.AppHostDirectory, @"..\database.sql")));
 
-var sqlDatabaseWithSchema = sqlDatabase
-    .WithSqlProject(new FileInfo(@"database\database.sqlproj").FullName);
-
-var dabServer = builder
+var apiServer = builder
     .AddContainer("data-api", image: "azure-databases/data-api-builder", tag: options.DabImage)
     .WithImageRegistry("mcr.microsoft.com")
-    .WithBindMount(source: new FileInfo(options.DabConfig).FullName, target: "/App/dab-config.json", isReadOnly: true)
-    .WithHttpEndpoint(targetPort: 5000, name: "http")
+    .WithBindMount(source: options.DabConfig, target: "/App/dab-config.json", isReadOnly: true)
+    .WithHttpEndpoint(targetPort: 5000, port: 5000, name: "http")
     .WithEnvironment("MSSQL_CONNECTION_STRING", sqlDatabase)
     .WithUrls(context =>
     {
@@ -61,7 +56,7 @@ var dabServer = builder
     .WithOtlpExporter()
     .WithParentRelationship(sqlDatabase)
     .WithHttpHealthCheck("/health")
-    .WaitFor(sqlDatabaseWithSchema);
+    .WaitFor(sqlDatabase);
 
 var sqlCommander = builder
     .AddContainer("sql-cmdr", "jerrynixon/sql-commander", options.SqlCmdrImage)
@@ -75,17 +70,18 @@ var sqlCommander = builder
     })
     .WithParentRelationship(sqlDatabase)
     .WithHttpHealthCheck("/health")
-    .WaitFor(sqlDatabaseWithSchema);
+    .WaitFor(sqlDatabase);
 
-var mcpInspector = builder
-    .AddMcpInspector("mcp-inspector")
-    .WithMcpServer(dabServer)
-    .WithParentRelationship(dabServer)
-    .WithEnvironment("NODE_TLS_REJECT_UNAUTHORIZED", "0")
-    .WaitFor(dabServer)
+var webApp = builder
+    .AddContainer("web-app", "nginx", "alpine")
+    .WithImageRegistry("docker.io")
+    .WithBindMount(source: options.WebRoot, target: "/usr/share/nginx/html", isReadOnly: true)
+    .WithHttpEndpoint(targetPort: 80, port: 5173, name: "http")
     .WithUrls(context =>
     {
-        context.Urls.First().DisplayText = "Inspector";
-    });
+        context.Urls.Clear();
+        context.Urls.Add(new() { Url = "/", DisplayText = "Web App", Endpoint = context.GetEndpoint("http") });
+    })
+    .WaitFor(apiServer);
 
 await builder.Build().RunAsync();

@@ -64,6 +64,45 @@ header {
     padding: 0.5rem 0.75rem;
 }
 
+.add-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.add-form input[type="text"] {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.add-form input[type="date"] {
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.add-btn {
+    background: rgba(255,255,255,0.9);
+    border: none;
+    color: #764ba2;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.add-btn:hover {
+    background: white;
+}
+
 .tasks-card {
     background: white;
     border-radius: 10px;
@@ -89,28 +128,30 @@ header {
     border-bottom: none;
 }
 
-.task-status {
-    width: 20px;
-    height: 20px;
+.task-check {
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     border: 2px solid #ddd;
+    background: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
     margin-top: 0.125rem;
+    transition: all 0.2s;
 }
 
-.task-status.completed {
+.task-check:hover {
+    border-color: #10b981;
+}
+
+.task-check.completed {
     background: #10b981;
     border-color: #10b981;
-    position: relative;
-}
-
-.task-status.completed::after {
-    content: '✓';
-    color: white;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 12px;
 }
 
 .task-content {
@@ -133,14 +174,20 @@ header {
     color: #6b7280;
 }
 
-.task-owner {
-    padding: 0.25rem 0.625rem;
-    background: #f3f4f6;
-    border-radius: 10px;
-    font-size: 0.8rem;
-    color: #4b5563;
-    white-space: nowrap;
+.task-delete {
+    background: none;
+    border: none;
+    color: #d1d5db;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: color 0.2s;
     margin-top: 0.125rem;
+}
+
+.task-delete:hover {
+    color: #ef4444;
 }
 
 .empty-state {
