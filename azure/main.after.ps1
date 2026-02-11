@@ -44,7 +44,7 @@ Write-Host "Firewall rule added ($myIp)" -ForegroundColor Green
 
 Write-Host "Deploying schema..." -ForegroundColor Yellow
 $schemaSql = Get-Content -Path "database.sql" -Raw
-Invoke-Sqlcmd -ServerInstance $sqlServerFqdn -Database $sqlDb -ConnectionString $sqlConn -Query $schemaSql
+Invoke-Sqlcmd -ConnectionString $sqlConn -Query $schemaSql
 Write-Host "Schema deployed" -ForegroundColor Green
 
 # ── 2b. Set Entra admin on SQL Server ──
