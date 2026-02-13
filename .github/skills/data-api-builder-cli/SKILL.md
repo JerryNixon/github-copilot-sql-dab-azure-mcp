@@ -8,6 +8,12 @@ license: MIT
 
 This skill powers GitHub Copilot assistance for the **Data API Builder (DAB)** CLI tool. It provides conversational guidance for creating, configuring, validating, and running DAB projects that expose database objects as REST, GraphQL, and MCP endpoints.
 
+## Documentation references
+
+- https://learn.microsoft.com/en-us/azure/data-api-builder/command-line/
+- https://learn.microsoft.com/en-us/azure/data-api-builder/command-line/install
+- https://github.com/Azure/data-api-builder
+
 ---
 
 ## Core Mental Model
@@ -110,9 +116,9 @@ dab init \
   --database-type mssql \
   --connection-string "@env('DATABASE_CONNECTION_STRING')" \
   --host-mode production \
-  --auth.provider AzureAD \
+  --auth.provider EntraId \
   --auth.issuer "https://login.microsoftonline.com/{tenant-id}/v2.0" \
-  --auth.audience "https://example.com/api" \
+  --auth.audience "{app-client-id-guid}" \
   --cors-origin "https://app.example.com"
 ```
 

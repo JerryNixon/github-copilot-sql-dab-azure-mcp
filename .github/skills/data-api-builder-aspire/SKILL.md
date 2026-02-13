@@ -3,16 +3,23 @@ name: data-api-builder-aspire
 description: Guide for .NET Aspire orchestration of SQL Server + Data API Builder + SQL Commander + MCP Inspector. Use when asked to create an Aspire-based DAB environment.
 ---
 
-# .NET Aspire + Data API Builder (Single-File Orchestration)
+# .NET Aspire + Data API Builder (AppHost Project Orchestration)
 
-This skill provides a minimal workflow for running **SQL Server**, **Data API Builder (DAB)**, **SQL Commander**, and **MCP Inspector** using **.NET Aspire's single-file AppHost** pattern for local development.
+This skill provides a minimal workflow for running **SQL Server**, **Data API Builder (DAB)**, **SQL Commander**, and **MCP Inspector** using a standard **Aspire AppHost project** (`apphost.csproj` + `Program.cs`) for local development.
+
+## Documentation references
+
+- https://learn.microsoft.com/azure/data-api-builder/
+- https://github.com/Azure/data-api-builder/tree/main/samples/aspire
+- https://aspire.dev/
+- https://learn.microsoft.com/dotnet/aspire/get-started/build-your-first-aspire-app
 
 ---
 
 ## Core Mental Model
 
-- **One `apphost.cs` file** orchestrates everything — no project files, no Docker Compose
-- **`aspire run`** starts all services with health checks, dependencies, and telemetry
+- **One AppHost project** orchestrates everything (`apphost/apphost.csproj` + `apphost/Program.cs`)
+- **`dotnet run --project apphost/apphost.csproj`** starts all services with health checks, dependencies, and telemetry
 - **Containers talk by service name**, not localhost
 - **DAB reads config from bind-mounted file** — mount `dab-config.json` read-only
 - **SQL Server must be healthy before DAB starts** — use `.WaitFor()` and health checks
@@ -23,7 +30,7 @@ This skill provides a minimal workflow for running **SQL Server**, **Data API Bu
 ## Prerequisites
 
 - **.NET 10+ SDK** — verify with `dotnet --version`
-- **Aspire CLI 13+** — install: `dotnet tool install -g aspire` — verify: `aspire --version`
+- **Aspire AppHost packages via NuGet** (no Aspire CLI required)
 - **Docker Desktop running** — SQL Server runs in container
 - **`dab-config.json`** in workspace root using `@env('MSSQL_CONNECTION_STRING')`
 
@@ -34,8 +41,8 @@ This skill provides a minimal workflow for running **SQL Server**, **Data API Bu
 ## Quick Workflow (Checklist)
 
 1. Create `.env` with connection string (gitignored).
-2. Create `apphost.cs` using the template below.
-3. Run with `aspire run`.
+2. Create `apphost/apphost.csproj` and `apphost/Program.cs` using the templates below.
+3. Run with `dotnet run --project apphost/apphost.csproj`.
 4. Access services via Aspire Dashboard.
 
 ---
@@ -54,17 +61,35 @@ MSSQL_CONNECTION_STRING=Server=sql-server;Database=MyDb;User Id=sa;Password=Your
 
 ---
 
-### `apphost.cs` (minimal template)
+### `apphost/apphost.csproj` (minimal template)
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.1.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAspireHost>true</IsAspireHost>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.0" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Azure.DataApiBuilder" Version="13.1.2-beta.516" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.McpInspector" Version="9.8.0" />
+  </ItemGroup>
+</Project>
+```
+
+---
+
+### `apphost/Program.cs` (minimal template)
 
 ```csharp
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
-
-#:sdk Aspire.AppHost.Sdk@13.0.0
-#:package Aspire.Hosting.SqlServer@13.0.0
-#:package CommunityToolkit.Aspire.Hosting.SqlDatabaseProjects@9.8.1-beta.420
-#:package CommunityToolkit.Aspire.Hosting.Azure.DataApiBuilder@9.8.1-beta.420
-#:package CommunityToolkit.Aspire.Hosting.McpInspector@9.8.0
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -173,7 +198,7 @@ await builder.Build().RunAsync();
 ### Start Services
 
 ```powershell
-aspire run
+dotnet run --project apphost/apphost.csproj
 ```
 
 This command:
@@ -206,11 +231,9 @@ This command:
 
 ### Stop Services
 
-Press `Ctrl+C` in terminal where `aspire run` is active, or:
+Press `Ctrl+C` in terminal where `dotnet run --project apphost/apphost.csproj` is active, or:
 
-```powershell
-docker stop $(docker ps -q)
-```
+Close the app from Aspire tooling and dashboard if needed.
 
 ---
 
@@ -233,12 +256,11 @@ Then change `dabServer` to wait for `sqlDatabaseWithSchema` instead of `sqlDatab
 
 ## Troubleshooting
 
-### `aspire: command not found`
+### AppHost project fails to start
 
 **Fix:**
-```powershell
-dotnet tool install -g aspire
-```
+- Verify .NET SDK and restore packages: `dotnet restore apphost/apphost.csproj`
+- Re-run: `dotnet run --project apphost/apphost.csproj`
 
 ### SQL Server container fails to start
 
@@ -265,12 +287,12 @@ Aspire auto-assigns ports. If dashboard doesn't open, check terminal output for 
 
 | Feature | Aspire | Docker Compose |
 |---------|--------|----------------|
-| **Definition** | Single C# file | YAML file |
+| **Definition** | AppHost project (`.csproj` + `Program.cs`) | YAML file |
 | **Language** | C# | YAML |
 | **Dependencies** | `.WaitFor()` + health checks | `depends_on` + healthcheck |
 | **Monitoring** | Built-in dashboard with logs, metrics, traces | External tools required |
 | **Service Discovery** | Automatic | Manual with service names |
-| **Hot Reload** | Yes with `--watch` | No |
+| **Hot Reload** | Yes with `dotnet watch --project apphost/apphost.csproj` | No |
 | **Debugging** | Native .NET debugging | Container debugging only |
 
 **Use Aspire when:**
@@ -281,7 +303,7 @@ Aspire auto-assigns ports. If dashboard doesn't open, check terminal output for 
 **Use Docker Compose when:**
 - You need multi-language support
 - You want standard container orchestration
-- Aspire isn't installed
+- You don't want a .NET AppHost project
 
 ---
 
@@ -304,9 +326,9 @@ docker volume ls | Select-String sql-data
 
 To reset database:
 ```powershell
-aspire run  # Stop with Ctrl+C
+dotnet run --project apphost/apphost.csproj  # Stop with Ctrl+C
 docker volume rm <volume-name>
-aspire run  # Restart
+dotnet run --project apphost/apphost.csproj  # Restart
 ```
 
 ### Health Checks
@@ -322,6 +344,6 @@ Services won't start until dependencies are healthy.
 ## Reference
 
 - [Aspire Sample (Official)](https://github.com/Azure/data-api-builder/tree/main/samples/aspire)
-- [Aspire CLI Reference](https://aspire.dev/reference/cli/commands/aspire/)
+- [Aspire AppHost Quickstart](https://learn.microsoft.com/dotnet/aspire/get-started/build-your-first-aspire-app)
 - [Aspire Dashboard Docs](https://aspire.dev/dashboard/overview/)
 - [DAB Configuration](https://learn.microsoft.com/azure/data-api-builder/configuration-file)

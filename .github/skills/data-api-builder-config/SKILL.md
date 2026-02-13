@@ -8,6 +8,12 @@ license: MIT
 
 This skill powers GitHub Copilot assistance for **Data API Builder (DAB) configuration files**. It provides expert guidance on the internal structure, schema validation, and best practices for `dab-config.json` files to ensure configurations are complete, valid, and aligned with DAB's capabilities.
 
+## Documentation references
+
+- https://learn.microsoft.com/en-us/azure/data-api-builder/configuration/
+- https://learn.microsoft.com/en-us/azure/data-api-builder/configuration/entities
+- https://github.com/Azure/data-api-builder/blob/main/schemas/dab.draft.schema.json
+
 ---
 
 ## Core Mental Model
@@ -1655,5 +1661,5 @@ az rest --method PATCH --uri "https://graph.microsoft.com/v1.0/applications/{obj
 
 ## Related Skills
 
-- See `data-api-builder.md` for comprehensive DAB CLI guidance
-- See `sql-mcp-server.md` for SQL MCP Server configuration
+- See `data-api-builder-cli` for comprehensive DAB CLI guidance
+- See `data-api-builder-mcp` for SQL MCP Server configuration
