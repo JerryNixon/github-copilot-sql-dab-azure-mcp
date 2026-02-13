@@ -88,12 +88,18 @@ erDiagram
 ### Local Prerequisites
 
 - [.NET 10+ SDK](https://dotnet.microsoft.com/download)
+- [Aspire workload](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling) — run `dotnet workload install aspire`
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) (for Entra ID app registration)
 - [Data API Builder](https://learn.microsoft.com/azure/data-api-builder/) — zero-code API
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (included on Windows)
 
 > Run `dotnet tool restore` to install DAB from the included tool manifest.
+
+**Azure Permissions Required:**
+- Create app registrations and users in Entra ID
+- Set SQL Server Active Directory admin
+- Install PowerShell modules (SqlServer module for schema deployment)
 
 ### Azure Prerequisites
 
@@ -106,31 +112,37 @@ erDiagram
 
 > Run `dotnet tool restore` to install DAB from the included tool manifest.
 
+**Azure Permissions Required:**
+- Create app registrations and users in Entra ID
+- Create Azure resources (SQL, Container Apps, ACR, Web Apps)
+- Set SQL Server Active Directory admin
+- Install PowerShell modules (SqlServer module for schema deployment)
+
 ### Set up Microsoft Entra (local + Azure)
 
 Creates the app registration, scope, test user, and writes auth values into config files.
 
 ```powershell
 az login
-./infra/setup-local.ps1
+./azure/entra-setup.ps1
 ```
 
 ### Tear down Microsoft Entra (local assets)
 
 ```powershell
 az login
-./infra/post-down.ps1
+./azure/post-down.ps1
 ```
 
 ## Quick Start A (Local)
 
 ```powershell
 az login
-./infra/setup-local.ps1          # creates Entra ID app reg, test user, updates config.js + dab-config.json
+./azure/entra-setup.ps1          # creates Entra ID app reg, test user, updates config.js + dab-config.json
 dotnet run --project apphost     # starts SQL Server, DAB, SQL Commander (SQL Auth locally)
 ```
 
-> Note: `entra-setup.ps1` is only required the FIRST time you run (same with az login). 
+> Note: `entra-setup.ps1` is only required the FIRST time you run (same with az login).
 
 ## Quick Start B (Azure)
 

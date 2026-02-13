@@ -99,7 +99,7 @@ Write-Host "Updating DAB config with EntraId auth..." -ForegroundColor Yellow
 Push-Location "$repoRoot/api"
 dab configure `
     --runtime.host.authentication.provider "EntraId" `
-    --runtime.host.authentication.jwt.audience "$($app.appId)" `
+    --runtime.host.authentication.jwt.audience "api://$($app.appId)" `
     --runtime.host.authentication.jwt.issuer "https://login.microsoftonline.com/$tenantId/v2.0"
 Pop-Location
 Write-Host "DAB config updated" -ForegroundColor Green

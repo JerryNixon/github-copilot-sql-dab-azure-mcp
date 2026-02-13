@@ -82,15 +82,16 @@ $updateSql = "UPDATE [dbo].[Todos] SET [Owner] = '$testUserPrincipal' WHERE [Tod
 Invoke-Sqlcmd -ServerInstance $sqlServerFqdn -Database $sqlDb -AccessToken $accessToken -Query $updateSql
 Write-Host "Seed data assigned to $testUserPrincipal" -ForegroundColor Green
 
-# ── 3. Update dab-config.json with real auth values ──
+# ── 3. Update dab-config.json with real auth values + CORS ──
 
-Write-Host "Updating DAB config with EntraId auth..." -ForegroundColor Yellow
+Write-Host "Updating DAB config with EntraId auth and CORS..." -ForegroundColor Yellow
 $tenantId = $env:AZURE_TENANT_ID
 Push-Location api
 dab configure `
     --runtime.host.authentication.provider "EntraId" `
     --runtime.host.authentication.jwt.audience "api://$clientId" `
-    --runtime.host.authentication.jwt.issuer "https://login.microsoftonline.com/$tenantId/v2.0"
+    --runtime.host.authentication.jwt.issuer "https://login.microsoftonline.com/$tenantId/v2.0" `
+    --runtime.host.cors.origins "http://localhost:5173" "$webUrl"
 Pop-Location
 Write-Host "DAB config updated" -ForegroundColor Green
 

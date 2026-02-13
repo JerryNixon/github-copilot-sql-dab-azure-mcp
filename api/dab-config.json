@@ -23,15 +23,15 @@
       "cors": {
         "origins": [
           "http://localhost:5173",
-          "https://todo-web-8291.azurewebsites.net"
+          "__WEB_URL_AZURE__"
         ],
         "allow-credentials": false
       },
       "authentication": {
         "provider": "EntraId",
         "jwt": {
-          "audience": "api://5c67e613-c5e6-41d9-a992-27624194fc20",
-          "issuer": "https://login.microsoftonline.com/eaf341ca-58d3-4d02-93c3-787dfe8e154f/v2.0"
+          "audience": "__AUDIENCE__",
+          "issuer": "__ISSUER__"
         }
       },
       "mode": "development"
