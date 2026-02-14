@@ -152,7 +152,7 @@ $existingUser = az ad user list --filter "userPrincipalName eq '$testUserPrincip
 
 if (-not $existingUser) {
     az ad user create `
-        --display-name "Todo Test User" `
+        --display-name "Test User" `
         --user-principal-name $testUserPrincipal `
         --password "TodoTest123!" `
         --force-change-password-next-sign-in false | Out-Null

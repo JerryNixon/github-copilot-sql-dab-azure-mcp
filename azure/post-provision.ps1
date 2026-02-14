@@ -166,6 +166,21 @@ Write-Host "Local config.js updated" -ForegroundColor Green
 
 # ── Summary ──
 
+# Append Azure URLs and connection string to .azure-env
+$azureEnvFile = "$PWD/.azure-env"
+if (Test-Path $azureEnvFile) {
+    $envContent = Get-Content $azureEnvFile -Raw
+    if ($envContent -notmatch 'web-app-url=') {
+        @"
+web-app-url=$webUrl
+sql-commander-url=https://$($env:AZURE_CONTAINER_APP_SQLCMDR_FQDN)
+data-api-url=https://$dabFqdn
+sql-connection-string=$sqlConn
+"@ | Out-File -FilePath $azureEnvFile -Encoding utf8 -Append
+        Write-Host "Azure URLs added to .azure-env" -ForegroundColor Green
+    }
+}
+
 Write-Host "`n=== Deployment Complete ===" -ForegroundColor Cyan
 Write-Host "Web:           $webUrl" -ForegroundColor White
 Write-Host "API:           $apiUrlAzure" -ForegroundColor White
