@@ -15,10 +15,14 @@ param sqlAdminPassword string
 param sqlAdminUser string = 'sqladmin'
 
 var tags = { 'azd-env-name': environmentName }
-var resourceToken = uniqueString(subscription().id, environmentName, location)
+
+@description('Token suffix for resource names (set by entra-setup.ps1, falls back to uniqueString)')
+param resourceToken string = ''
+
+var effectiveToken = empty(resourceToken) ? uniqueString(subscription().id, environmentName, location) : resourceToken
 
 resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: 'rg-${resourceToken}-${environmentName}'
+  name: 'rg-${effectiveToken}'
   location: location
   tags: tags
 }
@@ -29,7 +33,7 @@ module resources 'resources.bicep' = {
   params: {
     location: location
     tags: tags
-    resourceToken: resourceToken
+    resourceToken: effectiveToken
     sqlAdminUser: sqlAdminUser
     sqlAdminPassword: sqlAdminPassword
   }
@@ -37,7 +41,7 @@ module resources 'resources.bicep' = {
 
 // Outputs — available as env vars in post-up hook
 output AZURE_ENV_NAME string = environmentName
-output AZURE_RESOURCE_TOKEN string = resources.outputs.resourceToken
+output AZURE_RESOURCE_TOKEN string = effectiveToken
 output AZURE_RESOURCE_GROUP string = rg.name
 output AZURE_SQL_SERVER_NAME string = resources.outputs.sqlServerName
 output AZURE_SQL_SERVER_FQDN string = resources.outputs.sqlServerFqdn

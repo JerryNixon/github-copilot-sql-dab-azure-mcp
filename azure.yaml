@@ -13,7 +13,7 @@ hooks:
   postprovision:
     windows:
       shell: pwsh
-      run: azure/main.after.ps1
+      run: azure/post-provision.ps1
   postdown:
     windows:
       shell: pwsh

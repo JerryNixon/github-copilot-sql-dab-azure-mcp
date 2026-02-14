@@ -10,7 +10,7 @@ param sqlAdminPassword string
 // ──────────────────────────────────────
 
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
-  name: 'sql-svr-${resourceToken}'
+  name: 'sql-server-${resourceToken}'
   location: location
   tags: tags
   properties: {
@@ -34,8 +34,12 @@ resource sqlDb 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   location: location
   tags: tags
   sku: {
-    name: 'S0'
-    tier: 'Standard'
+    name: 'GP_S_Gen5_2'
+    tier: 'GeneralPurpose'
+  }
+  properties: {
+    useFreeLimit: true
+    freeLimitExhaustionBehavior: 'AutoPause'
   }
 }
 
@@ -56,7 +60,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
 // ──────────────────────────────────────
 
 resource cae 'Microsoft.App/managedEnvironments@2024-03-01' = {
-  name: 'aca-cae-${resourceToken}'
+  name: 'environment-${resourceToken}'
   location: location
   tags: tags
   properties: {}
@@ -73,7 +77,7 @@ var sqlConnString = 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName}
 var sqlMiConnString = 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=sql-db;Authentication=Active Directory Managed Identity;Encrypt=true;TrustServerCertificate=false'
 
 resource dabApp 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'aca-dab-${resourceToken}'
+  name: 'data-api-${resourceToken}'
   location: location
   tags: tags
   identity: { type: 'SystemAssigned' }
@@ -117,7 +121,7 @@ resource dabApp 'Microsoft.App/containerApps@2024-03-01' = {
 // ──────────────────────────────────────
 
 resource sqlCmdr 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'aca-cmdr-${resourceToken}'
+  name: 'sql-commander-${resourceToken}'
   location: location
   tags: tags
   properties: {
@@ -152,7 +156,7 @@ resource sqlCmdr 'Microsoft.App/containerApps@2024-03-01' = {
 // ──────────────────────────────────────
 
 resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
-  name: 'web-app-plan-${resourceToken}'
+  name: 'service-plan-${resourceToken}'
   location: location
   tags: tags
   kind: 'linux'
@@ -179,7 +183,7 @@ resource webApp 'Microsoft.Web/sites@2024-04-01' = {
 // ──────────────────────────────────────
 
 // Post-up hook uses these naming conventions:
-//   App registration: app-{token}-{env}
+//   App registration: app-{token}
 //   Test user: testuser-{token}
 
 output resourceToken string = resourceToken

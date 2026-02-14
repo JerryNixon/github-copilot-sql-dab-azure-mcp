@@ -16,7 +16,7 @@ $webUrl            = $env:AZURE_WEB_APP_URL
 $dabAppName        = $env:AZURE_CONTAINER_APP_API_NAME
 $dabPrincipalId    = $env:AZURE_CONTAINER_APP_API_PRINCIPAL_ID
 $dabFqdn           = $env:AZURE_CONTAINER_APP_API_FQDN
-$envName           = $env:AZURE_ENV_NAME
+$token             = $env:AZURE_RESOURCE_TOKEN
 $clientId          = $env:AZURE_CLIENT_ID
 
 $sqlConn = "Server=tcp:$sqlServerFqdn,1433;Database=$sqlDb;User Id=$sqlAdminUser;Password=$sqlAdminPassword;Encrypt=true;TrustServerCertificate=false"
@@ -51,6 +51,7 @@ Write-Host "Schema deployed" -ForegroundColor Green
 
 Write-Host "Setting Entra admin on SQL Server..." -ForegroundColor Yellow
 $currentUser = az ad signed-in-user show --query "{objectId: id, upn: userPrincipalName}" | ConvertFrom-Json
+$domainName = $currentUser.upn.Split('@')[1]
 az sql server ad-admin create `
     --resource-group $resourceGroup `
     --server $sqlServerName `
@@ -76,8 +77,7 @@ Write-Host "Database user created and granted read/write" -ForegroundColor Green
 # ── 2d. Assign seed data to test user ──
 
 Write-Host "Assigning seed data to test user..." -ForegroundColor Yellow
-$domainName = az ad signed-in-user show --query 'userPrincipalName' -o tsv | ForEach-Object { $_.Split('@')[1] }
-$testUserPrincipal = "testuser-$envName@$domainName"
+$testUserPrincipal = "testuser-$token@$domainName"
 $updateSql = "UPDATE [dbo].[Todos] SET [Owner] = '$testUserPrincipal' WHERE [TodoId] IN (1, 2, 3)"
 Invoke-Sqlcmd -ServerInstance $sqlServerFqdn -Database $sqlDb -AccessToken $accessToken -Query $updateSql
 Write-Host "Seed data assigned to $testUserPrincipal" -ForegroundColor Green
@@ -89,7 +89,7 @@ $tenantId = $env:AZURE_TENANT_ID
 Push-Location api
 dab configure `
     --runtime.host.authentication.provider "EntraId" `
-    --runtime.host.authentication.jwt.audience "api://$clientId" `
+    --runtime.host.authentication.jwt.audience "$clientId" `
     --runtime.host.authentication.jwt.issuer "https://login.microsoftonline.com/$tenantId/v2.0" `
     --runtime.host.cors.origins "http://localhost:5173" "$webUrl"
 Pop-Location
@@ -113,7 +113,7 @@ Write-Host "DAB updated" -ForegroundColor Green
 # ── 6. Add Azure redirect URI to app registration ──
 
 Write-Host "Adding Azure redirect URI..." -ForegroundColor Yellow
-$appName = "app-$envName"
+$appName = "app-$token"
 $app = az ad app list --display-name $appName --query "[0].{appId: appId, id: id}" | ConvertFrom-Json
 $localRedirect = "http://localhost:5173"
 
@@ -165,9 +165,6 @@ $configContent | Out-File -FilePath "web/config.js" -Encoding utf8 -Force
 Write-Host "Local config.js updated" -ForegroundColor Green
 
 # ── Summary ──
-
-$domainName = az ad signed-in-user show --query 'userPrincipalName' -o tsv | ForEach-Object { $_.Split('@')[1] }
-$testUserPrincipal = "testuser-$envName@$domainName"
 
 Write-Host "`n=== Deployment Complete ===" -ForegroundColor Cyan
 Write-Host "Web:           $webUrl" -ForegroundColor White

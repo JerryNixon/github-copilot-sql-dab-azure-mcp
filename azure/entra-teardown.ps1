@@ -2,10 +2,23 @@
 # App registrations are tenant-level and not deleted by `azd down`
 
 $ErrorActionPreference = "Stop"
+$repoRoot = (Resolve-Path "$PSScriptRoot/..").Path
+$azureEnvFile = "$repoRoot/.azure-env"
 
-$isAzd = [bool]$env:AZURE_ENV_NAME
-$envName = if ($isAzd) { $env:AZURE_ENV_NAME } else { "local" }
-$appName = if ($isAzd) { "app-$envName" } else { "todo-$envName" }
+if (-not (Test-Path $azureEnvFile)) {
+    Write-Host "No .azure-env file found — nothing to clean up." -ForegroundColor Gray
+    exit 0
+}
+
+# Read .azure-env
+$envData = @{}
+Get-Content $azureEnvFile | Where-Object { $_ -match '=' -and $_ -notmatch '^#' } | ForEach-Object {
+    $parts = $_ -split '=', 2
+    $envData[$parts[0].Trim()] = $parts[1].Trim()
+}
+
+$appName = $envData['app-registration']
+$testUserPrincipal = $envData['username']
 
 # ── 1. Delete app registration ──
 
@@ -21,15 +34,19 @@ if ($app) {
 
 # ── 2. Delete test user ──
 
-$domainName = az ad signed-in-user show --query 'userPrincipalName' -o tsv | ForEach-Object { $_.Split('@')[1] }
-$testUserPrincipal = "testuser-$envName@$domainName"
-$existingUser = az ad user list --filter "userPrincipalName eq '$testUserPrincipal'" --query "[0].id" -o tsv
-
-if ($existingUser) {
-    az ad user delete --id $existingUser
-    Write-Host "Deleted test user: $testUserPrincipal" -ForegroundColor Green
-} else {
-    Write-Host "No test user found: $testUserPrincipal" -ForegroundColor Gray
+if ($testUserPrincipal) {
+    $existingUser = az ad user list --filter "userPrincipalName eq '$testUserPrincipal'" --query "[0].id" -o tsv
+    if ($existingUser) {
+        az ad user delete --id $existingUser
+        Write-Host "Deleted test user: $testUserPrincipal" -ForegroundColor Green
+    } else {
+        Write-Host "No test user found: $testUserPrincipal" -ForegroundColor Gray
+    }
 }
+
+# ── 3. Delete .azure-env ──
+
+Remove-Item $azureEnvFile -Force
+Write-Host "Deleted .azure-env" -ForegroundColor Green
 
 Write-Host "Entra ID cleanup complete." -ForegroundColor Cyan

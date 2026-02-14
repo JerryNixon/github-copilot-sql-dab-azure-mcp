@@ -3,28 +3,9 @@
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Fail fast if config.js has placeholder values
-var configPath = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, @"..\web\config.js"));
-if (File.Exists(configPath))
+if (!Demo.VerifySetup(Path.GetFullPath(Path.Combine(builder.AppHostDirectory, @".."))))
 {
-    var configContent = File.ReadAllText(configPath);
-    if (configContent.Contains("__CLIENT_ID__") || configContent.Contains("__TENANT_ID__"))
-    {
-        throw new InvalidOperationException(
-            "web/config.js has placeholder values. Run: ./azure/entra-setup.ps1");
-    }
-}
-
-// Fail fast if dab-config.json has placeholder values
-var dabConfigPath = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, @"..\api\dab-config.json"));
-if (File.Exists(dabConfigPath))
-{
-    var dabContent = File.ReadAllText(dabConfigPath);
-    if (dabContent.Contains("__AUDIENCE__") || dabContent.Contains("__ISSUER__"))
-    {
-        throw new InvalidOperationException(
-            "api/dab-config.json has placeholder values. Run: ./azure/entra-setup.ps1");
-    }
+    return;
 }
 
 var options = new

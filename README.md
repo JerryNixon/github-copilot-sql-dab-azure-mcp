@@ -131,7 +131,7 @@ az login
 
 ```powershell
 az login
-./azure/post-down.ps1
+./azure/entra-teardown.ps1
 ```
 
 ## Quick Start A (Local)
@@ -165,15 +165,17 @@ azd down                         # deletes Azure resources + app registration + 
 │   └── Dockerfile                # Custom DAB image for Azure
 ├── apphost/
 │   ├── apphost.csproj            # Aspire AppHost project
+│   ├── Demo.cs                   # Setup verification (prereq checks, test user display)
 │   └── Program.cs                # Aspire orchestration (local dev only)
 ├── azure/
 │   ├── entra-setup.ps1           # Entra ID setup (app reg, scopes, test user, dab configure)
 │   ├── entra-teardown.ps1        # azd hook: cleanup app registration + test user
 │   ├── main.bicep                # Subscription-scope entry point
 │   ├── main.parameters.json      # azd parameter mappings
-│   ├── main.after.ps1            # azd hook: deploy after Bicep (schema, ACR, container, web)
+│   ├── post-provision.ps1        # azd hook: deploy after Bicep (schema, ACR, container, web)
 │   └── resources.bicep           # All Azure resources
 ├── azure.yaml                    # azd project config (must be at root)
+├── .azure-env                    # Auto-generated env file (token, resource names, credentials)
 ├── database.sql                  # Database schema (tables + seed data)
 ├── web/
 │   ├── app.js                    # UI layer (rendering, events, escapeHtml)
@@ -196,7 +198,7 @@ One script for both local and cloud. Run directly for local dev; `azd up` calls 
 4. Writes `config.js` with real clientId/tenantId
 5. Creates test user and assigns `sample-role-1`
 
-### Post-provision (`azure/main.after.ps1`)
+### Post-provision (`azure/post-provision.ps1`)
 
 Runs after Bicep. Only consumes stored values — never creates Entra ID resources:
 
@@ -213,33 +215,36 @@ Runs after Bicep. Only consumes stored values — never creates Entra ID resourc
 ## Configuration
 
 - `config.js` and `dab-config.json` are written with real client/tenant/audience values by `entra-setup.ps1`; only `apiUrlAzure` remains a placeholder until Azure deploy.
-- AppHost fails fast only if `__CLIENT_ID__` or `__AUDIENCE__` remain; it does not block on the `apiUrlAzure` placeholder.
+- `Demo.cs` runs at startup: checks for placeholder values, displays prerequisites, and offers to run `entra-setup.ps1` interactively. If `.azure-env` exists with credentials, it shows the test user panel.
 - CORS in `dab-config.json` includes `http://localhost:5173` and the baked-in Azure web host; update the host if you change the web app name.
-- All secrets live in `.azure/` (git-ignored). Set via `azd env set`.
+- `.azure-env` (git-ignored) stores the token, all resource names, and test user credentials. Delete it to reset and regenerate a new token.
+- azd secrets are set via `azd env set` and stored in `.azure/`.
 
 ## Azure Resources
 
 | Resource | Name Pattern | Purpose |
 |----------|-------------|---------|
-| Resource Group | `rg-{token}-{env}` | Container |
-| Azure SQL Server | `sql-svr-{token}` | Database server |
+| Resource Group | `rg-{token}` | Container |
+| Azure SQL Server | `sql-server-{token}` | Database server |
 | Azure SQL Database | `sql-db` | App database |
 | Container Registry | `acr{token}` | DAB image |
-| Container Apps Env | `aca-cae-{token}` | Container hosting |
-| Container App (DAB) | `aca-dab-{token}` | API (SAMI to SQL) |
-| Container App (Cmdr) | `aca-cmdr-{token}` | SQL Commander |
-| App Service Plan | `web-app-plan-{token}` | B1 Linux |
+| Container Apps Env | `environment-{token}` | Container hosting |
+| Container App (DAB) | `data-api-{token}` | API (SAMI to SQL) |
+| Container App (Cmdr) | `sql-commander-{token}` | SQL Commander |
+| App Service Plan | `service-plan-{token}` | B1 Linux |
 | Web App | `web-app-{token}` | Static frontend |
-| App Registration | `app-{env}` | Entra ID SPA |
-| Test User | `testuser-{env}@...` | Testing |
+| App Registration | `app-{token}` | Entra ID SPA |
+| Test User | `testuser-{token}@...` | Testing |
 
-> `{token}` = `uniqueString(subscription, env, location)`
+> `{token}` = timestamp (`yyyyMMddHHmm`) generated on first run, stored in `.azure-env`. Falls back to `uniqueString()` if not set.
 
 ## Testing
 
 Sign in with the test user created by setup:
-- **Username**: `testuser-{env}@yourtenant.onmicrosoft.com`
+- **Username**: `testuser-{token}@yourtenant.onmicrosoft.com`
 - **Password**: `TodoTest123!`
+
+Credentials are saved in `.azure-env` at the repo root and displayed by `Demo.cs` on startup.
 
 Only todos where `Owner` matches the signed-in user's UPN are returned.
 

@@ -1,12 +1,34 @@
-# Entra ID setup — auto-detects local vs azd from AZURE_ENV_NAME env var
+# Entra ID setup — creates app registration, test user, and .azure-env
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path "$PSScriptRoot/..").Path
+$azureEnvFile = "$repoRoot/.azure-env"
 
 $isAzd = [bool]$env:AZURE_ENV_NAME
-$envName = if ($isAzd) { $env:AZURE_ENV_NAME } else { "local" }
-$appName = if ($isAzd) { "app-$envName" } else { "todo-$envName" }
 $localRedirect = "http://localhost:5173"
+
+# ── 0. Token management ──
+
+if (Test-Path $azureEnvFile) {
+    $envData = @{}
+    Get-Content $azureEnvFile | Where-Object { $_ -match '=' -and $_ -notmatch '^#' } | ForEach-Object {
+        $parts = $_ -split '=', 2
+        $envData[$parts[0].Trim()] = $parts[1].Trim()
+    }
+    $token = $envData['token']
+    Write-Host "Using existing token: $token" -ForegroundColor Gray
+} else {
+    $token = (Get-Date).ToUniversalTime().ToString('yyyyMMddHHmm')
+    Write-Host "Generated token: $token" -ForegroundColor Green
+}
+
+if ($isAzd) {
+    azd env set AZURE_RESOURCE_TOKEN $token
+}
+
+$appName = "app-$token"
+$domainName = az ad signed-in-user show --query 'userPrincipalName' -o tsv | ForEach-Object { $_.Split('@')[1] }
+$testUserPrincipal = "testuser-$token@$domainName"
 
 # ── 1. App registration (idempotent) ──
 
@@ -24,8 +46,14 @@ if (-not $app) {
     Write-Host "App registration exists: $appName" -ForegroundColor Gray
 }
 
-# Configure SPA redirect and expose API scope
-$scopeId = [guid]::NewGuid().ToString()
+# Reuse existing scope ID if present (avoids CannotDeleteOrUpdateEnabledEntitlement error)
+$existingScopeId = az ad app show --id $app.appId --query "api.oauth2PermissionScopes[?value=='access_as_user'].id | [0]" -o tsv
+if ($existingScopeId) {
+    $scopeId = $existingScopeId
+    Write-Host "Using existing scope: $scopeId" -ForegroundColor Gray
+} else {
+    $scopeId = [guid]::NewGuid().ToString()
+}
 $appPatch = @{
     spa = @{ redirectUris = @($localRedirect) }
     web = @{ redirectUris = @() }
@@ -99,7 +127,7 @@ Write-Host "Updating DAB config with EntraId auth..." -ForegroundColor Yellow
 Push-Location "$repoRoot/api"
 dab configure `
     --runtime.host.authentication.provider "EntraId" `
-    --runtime.host.authentication.jwt.audience "api://$($app.appId)" `
+    --runtime.host.authentication.jwt.audience "$($app.appId)" `
     --runtime.host.authentication.jwt.issuer "https://login.microsoftonline.com/$tenantId/v2.0"
 Pop-Location
 Write-Host "DAB config updated" -ForegroundColor Green
@@ -120,8 +148,6 @@ Write-Host "config.js updated" -ForegroundColor Green
 # ── 4. Test user (idempotent) ──
 
 Write-Host "Creating test user..." -ForegroundColor Yellow
-$domainName = az ad signed-in-user show --query 'userPrincipalName' -o tsv | ForEach-Object { $_.Split('@')[1] }
-$testUserPrincipal = "testuser-$envName@$domainName"
 $existingUser = az ad user list --filter "userPrincipalName eq '$testUserPrincipal'" --query "[0]" | ConvertFrom-Json
 
 if (-not $existingUser) {
@@ -133,6 +159,37 @@ if (-not $existingUser) {
     Write-Host "Test user created: $testUserPrincipal" -ForegroundColor Green
 } else {
     Write-Host "Test user exists: $testUserPrincipal" -ForegroundColor Gray
+}
+
+# Write .azure-env (gitignored) with token and all resource names
+$isNew = -not (Test-Path $azureEnvFile)
+@"
+# Auto-generated. Do not edit. Delete to reset.
+token=$token
+resource-group=rg-$token
+sql-server=sql-server-$token
+sql-database=sql-db
+container-registry=acr$token
+environment=environment-$token
+data-api=data-api-$token
+sql-commander=sql-commander-$token
+service-plan=service-plan-$token
+web-app=web-app-$token
+app-registration=$appName
+username=$testUserPrincipal
+password=TodoTest123!
+"@ | Out-File -FilePath $azureEnvFile -Encoding utf8 -Force
+Write-Host "Environment written to .azure-env" -ForegroundColor Green
+
+# Open in Notepad on first creation so user can save/copy credentials
+if ($isNew) {
+    if ($IsWindows -or $env:OS -eq "Windows_NT") {
+        Start-Process notepad $azureEnvFile
+    } elseif ($IsMacOS) {
+        Start-Process open $azureEnvFile
+    } else {
+        Start-Process xdg-open $azureEnvFile 2>$null
+    }
 }
 
 # ── 5. Assign App Role to test user ──
@@ -156,3 +213,20 @@ az rest --method POST `
     --body "@$repoRoot/temp-role.json" 2>$null | Out-Null
 Remove-Item "$repoRoot/temp-role.json" -Force
 Write-Host "Role assigned: sample-role-1" -ForegroundColor Green
+
+# ── 6. Verify config files were updated ──
+
+$failed = @()
+$configJsContent = Get-Content "$repoRoot/web/config.js" -Raw
+if ($configJsContent -match '__CLIENT_ID__|__TENANT_ID__') {
+    $failed += "web/config.js still contains placeholders"
+}
+$dabConfigContent = Get-Content "$repoRoot/api/dab-config.json" -Raw
+if ($dabConfigContent -match '__AUDIENCE__|__ISSUER__') {
+    $failed += "api/dab-config.json still contains placeholders"
+}
+if ($failed.Count -gt 0) {
+    foreach ($f in $failed) { Write-Host "✗ $f" -ForegroundColor Red }
+    exit 1
+}
+Write-Host "✓ All config files verified" -ForegroundColor Green

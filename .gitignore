@@ -4,12 +4,12 @@
 .env
 .env.local
 *.env
+.azure-env
+
+.github/
 
 # Azure Developer CLI environment state (contains secrets)
 .azure/
-
-# Aspire CLI generated files (we use apphost/ project instead)
-.aspire/
 
 # DAB configuration (may contain secrets in connection strings)
 dab-config.*.json

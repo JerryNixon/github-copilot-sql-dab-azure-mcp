@@ -3,9 +3,11 @@
     "configurations": [
         {
             "name": "AppHost",
-            "type": "dotnet",
+            "type": "coreclr",
             "request": "launch",
-            "projectPath": "${workspaceFolder}/apphost/apphost.csproj"
+            "program": "dotnet",
+            "args": ["run", "--project", "${workspaceFolder}/apphost/apphost.csproj"],
+            "console": "integratedTerminal"
         }
     ]
 }
