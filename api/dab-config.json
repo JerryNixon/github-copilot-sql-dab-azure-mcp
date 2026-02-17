@@ -23,15 +23,15 @@
       "cors": {
         "origins": [
           "http://localhost:5173",
-          "https://web-app-202602142044.azurewebsites.net"
+          "__WEB_URL_AZURE__"
         ],
         "allow-credentials": false
       },
       "authentication": {
         "provider": "EntraId",
         "jwt": {
-          "audience": "e8033be4-9120-4981-9fef-b67968e8cc8a",
-          "issuer": "https://login.microsoftonline.com/eaf341ca-58d3-4d02-93c3-787dfe8e154f/v2.0"
+          "audience": "__AUDIENCE__",
+          "issuer": "__ISSUER__"
         }
       },
       "mode": "development"

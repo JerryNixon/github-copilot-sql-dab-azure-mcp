@@ -181,17 +181,6 @@ password=TodoTest123!
 "@ | Out-File -FilePath $azureEnvFile -Encoding utf8 -Force
 Write-Host "Environment written to .azure-env" -ForegroundColor Green
 
-# Open in Notepad on first creation so user can save/copy credentials
-if ($isNew) {
-    if ($IsWindows -or $env:OS -eq "Windows_NT") {
-        Start-Process notepad $azureEnvFile
-    } elseif ($IsMacOS) {
-        Start-Process open $azureEnvFile
-    } else {
-        Start-Process xdg-open $azureEnvFile 2>$null
-    }
-}
-
 # ── 5. Assign App Role to test user ──
 
 Write-Host "Assigning sample-role-1 to test user..." -ForegroundColor Yellow

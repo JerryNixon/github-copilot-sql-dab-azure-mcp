@@ -2,13 +2,14 @@
 // Licensed under the MIT License.
 
 using System.Diagnostics;
-using Microsoft.Identity.Client.Extensions.Msal;
 using Spectre.Console;
 
 static class Demo
 {
-    public static bool VerifySetup(string rootPath)
+    public static bool VerifySetup(string rootPath, out string? token)
     {
+        token = null;
+
         if (!FileExists(Path.Combine(rootPath, "database.sql"), out var error))
         {
             ShowError($"{error} (SQL schema for Aspire to create the database)");
@@ -32,22 +33,25 @@ static class Demo
         if (!IsConfigured(configJs, out error, "__CLIENT_ID__", "__TENANT_ID__"))
         {
             ShowError($"{error} (run azure/entra-setup.ps1 to configure)");
-            return SetupAndRetry(rootPath);
+            return SetupAndRetry(rootPath, out token);
         }
         else if (!IsConfigured(dabConfig, out error, "__AUDIENCE__", "__ISSUER__"))
         {
             ShowError($"{error} (run azure/entra-setup.ps1 to configure)");
-            return SetupAndRetry(rootPath);
+            return SetupAndRetry(rootPath, out token);
         }
         else
         {
             ShowTestUser(rootPath);
+            token = ReadToken(rootPath);
             return true;
         }
     }
 
-    private static bool SetupAndRetry(string rootPath)
+    private static bool SetupAndRetry(string rootPath, out string? token)
     {
+        token = null;
+
         if (!IsInteractive())
         {
             return false;
@@ -77,7 +81,7 @@ static class Demo
             return false;
         }
 
-        return VerifySetup(rootPath);
+        return VerifySetup(rootPath, out token);
 
         static bool IsInteractive()
         {
@@ -207,6 +211,20 @@ static class Demo
         {
             AnsiConsole.Markup($"\n  [red]✗ {message}[/]\n");
         }
+    }
+
+    private static string? ReadToken(string rootPath)
+    {
+        var file = Path.Combine(rootPath, ".azure-env");
+        if (!File.Exists(file))
+        {
+            return null;
+        }
+
+        return File.ReadAllLines(file)
+            .Where(l => l.Contains('=') && !l.StartsWith('#'))
+            .Select(l => (Key: l[..l.IndexOf('=')].Trim(), Value: l[(l.IndexOf('=') + 1)..].Trim()))
+            .FirstOrDefault(l => l.Key == "token").Value;
     }
 
     private static void ShowTestUser(string rootPath)

@@ -44,7 +44,29 @@ if ($testUserPrincipal) {
     }
 }
 
-# ── 3. Delete .azure-env ──
+# ── 3. Reset config files to placeholder state ──
+
+Write-Host "Resetting config files..." -ForegroundColor Yellow
+
+@"
+const CONFIG = {
+    clientId: '__CLIENT_ID__',
+    tenantId: '__TENANT_ID__',
+    apiUrlLocal: 'http://localhost:5000',
+    apiUrlAzure: '__API_URL_AZURE__'
+};
+"@ | Out-File -FilePath "$repoRoot/web/config.js" -Encoding utf8 -Force
+
+Push-Location "$repoRoot/api"
+dab configure `
+    --runtime.host.authentication.provider "EntraId" `
+    --runtime.host.authentication.jwt.audience "__AUDIENCE__" `
+    --runtime.host.authentication.jwt.issuer "__ISSUER__"
+Pop-Location
+
+Write-Host "Config files reset to placeholders" -ForegroundColor Green
+
+# ── 4. Delete .azure-env ──
 
 Remove-Item $azureEnvFile -Force
 Write-Host "Deleted .azure-env" -ForegroundColor Green
