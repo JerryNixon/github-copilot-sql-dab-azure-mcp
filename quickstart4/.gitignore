@@ -1,24 +1,9 @@
-# Environment variables
 .env
-.env.local
-*.env
 .azure-env
-
-# Azure Developer CLI environment state (contains secrets)
 .azure/
-
-# DAB configuration (may contain secrets in connection strings)
 dab-config.*.json
-
-# Build outputs
-**/bin/
-**/obj/
-
-# Dependencies
-node_modules
-
-# Build output
-dist
-
-# Logs
-*.log
+bin/
+obj/
+node_modules/
+web-deploy-temp/
+web-deploy.zip

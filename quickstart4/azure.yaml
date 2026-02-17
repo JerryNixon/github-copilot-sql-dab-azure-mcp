@@ -1,21 +1,27 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
 name: dab-quickstart4
+metadata:
+  template: dab-quickstart4
 
 infra:
   provider: bicep
   path: azure
+  module: main
 
 hooks:
   preprovision:
-    windows:
-      shell: pwsh
-      run: azure/entra-setup.ps1
+    shell: pwsh
+    continueOnError: false
+    interactive: true
+    run: ./azure/entra-setup.ps1
   postprovision:
-    windows:
-      shell: pwsh
-      run: azure/post-provision.ps1
+    shell: pwsh
+    continueOnError: false
+    interactive: true
+    run: ./azure/post-provision.ps1
   postdown:
-    windows:
-      shell: pwsh
-      run: azure/entra-teardown.ps1
+    shell: pwsh
+    continueOnError: true
+    interactive: true
+    run: ./azure/entra-teardown.ps1
