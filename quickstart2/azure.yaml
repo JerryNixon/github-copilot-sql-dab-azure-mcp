@@ -1,0 +1,13 @@
+name: dab-quickstart2
+metadata:
+  template: dab-quickstart2
+infra:
+  provider: bicep
+  path: azure
+  module: main
+hooks:
+  postprovision:
+    shell: pwsh
+    continueOnError: false
+    interactive: true
+    run: ./azure/post-provision.ps1

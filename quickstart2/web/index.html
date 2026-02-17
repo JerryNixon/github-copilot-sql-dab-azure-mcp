@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-left">
+                <h1>My Tasks</h1>
+            </div>
+            <div class="header-right">
+                <button class="refresh-btn" id="refreshBtn">↻</button>
+            </div>
+        </header>
+
+        <form class="add-form" id="addForm">
+            <input type="text" id="newTitle" placeholder="What needs to be done?" required>
+            <input type="date" id="newDueDate">
+            <button type="submit" class="add-btn">Add</button>
+        </form>
+
+        <div class="tasks-card" id="tasksList">
+            <!-- Tasks will be rendered here -->
+        </div>
+    </div>
+
+    <script src="dab.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

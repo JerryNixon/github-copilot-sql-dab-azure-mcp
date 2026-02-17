@@ -1,0 +1,34 @@
+{
+  "$schema": "https://dataapibuilder.azurewebsites.net/schemas/dab.draft.schema.json",
+  "data-source": {
+    "database-type": "mssql",
+    "connection-string": ""
+  },
+  "runtime": {
+    "rest": { "enabled": true, "path": "/api", "request-body-strict": true },
+    "graphql": { "enabled": true, "path": "/graphql", "allow-introspection": true },
+    "host": {
+      "cors": {
+        "origins": ["http://localhost:5173"],
+        "allow-credentials": false
+      },
+      "mode": "development"
+    }
+  },
+  "entities": {
+    "Todos": {
+      "source": { "object": "dbo.Todos", "type": "table" },
+      "permissions": [
+        {
+          "role": "anonymous",
+          "actions": [
+            { "action": "create" },
+            { "action": "read" },
+            { "action": "update" },
+            { "action": "delete" }
+          ]
+        }
+      ]
+    }
+  }
+}

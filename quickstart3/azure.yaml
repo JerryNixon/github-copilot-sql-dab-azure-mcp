@@ -1,0 +1,23 @@
+name: dab-quickstart3
+metadata:
+  template: dab-quickstart3
+infra:
+  provider: bicep
+  path: azure
+  module: main
+hooks:
+  preprovision:
+    shell: pwsh
+    continueOnError: false
+    interactive: true
+    run: ./azure/entra-setup.ps1
+  postprovision:
+    shell: pwsh
+    continueOnError: false
+    interactive: true
+    run: ./azure/post-provision.ps1
+  postdown:
+    shell: pwsh
+    continueOnError: true
+    interactive: true
+    run: ./azure/entra-teardown.ps1
