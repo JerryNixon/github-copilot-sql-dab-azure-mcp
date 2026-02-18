@@ -160,7 +160,7 @@ resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
   location: location
   tags: tags
   kind: 'linux'
-  sku: { name: 'B1' }
+  sku: { name: 'F1' }
   properties: { reserved: true }
 }
 
