@@ -2,6 +2,15 @@
 
 Built entirely by GitHub Copilot. From schema design to Azure deployment — no hand-written code.
 
+## Services Overview
+
+```mermaid
+flowchart LR
+  Inspector["MCP Inspector"] -->|MCP| API
+  API["API Builder"] --> DB[(SQL Database)]
+  Commander["SQL Commander"] --> DB
+```
+
 ## What Copilot Built
 
 - **SQL Database Project** — 3 tables, seed data, SqlPackage deployment
