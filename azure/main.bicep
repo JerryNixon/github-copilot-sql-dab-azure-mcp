@@ -16,7 +16,7 @@ param sqlAdminUser string = 'sqladmin'
 
 var tags = { 'azd-env-name': environmentName }
 
-@description('Token suffix for resource names (set by entra-setup.ps1, falls back to uniqueString)')
+@description('Token suffix for resource names (falls back to uniqueString)')
 param resourceToken string = ''
 
 var effectiveToken = empty(resourceToken) ? uniqueString(subscription().id, environmentName, location) : resourceToken
@@ -48,8 +48,6 @@ output AZURE_SQL_SERVER_FQDN string = resources.outputs.sqlServerFqdn
 output AZURE_SQL_DATABASE string = 'sql-db'
 output AZURE_SQL_ADMIN_USER string = sqlAdminUser
 output AZURE_ACR_NAME string = resources.outputs.acrName
-output AZURE_WEB_APP_NAME string = resources.outputs.webAppName
-output AZURE_WEB_APP_URL string = resources.outputs.webAppUrl
 output AZURE_CONTAINER_APP_API_NAME string = resources.outputs.dabAppName
 output AZURE_CONTAINER_APP_API_PRINCIPAL_ID string = resources.outputs.dabAppPrincipalId
 output AZURE_CONTAINER_APP_API_FQDN string = resources.outputs.dabFqdn

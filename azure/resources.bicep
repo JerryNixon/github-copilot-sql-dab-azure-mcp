@@ -152,39 +152,8 @@ resource sqlCmdr 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 // ──────────────────────────────────────
-// App Service (Web)
-// ──────────────────────────────────────
-
-resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
-  name: 'service-plan-${resourceToken}'
-  location: location
-  tags: tags
-  kind: 'linux'
-  sku: { name: 'F1' }
-  properties: { reserved: true }
-}
-
-resource webApp 'Microsoft.Web/sites@2024-04-01' = {
-  name: 'web-app-${resourceToken}'
-  location: location
-  tags: tags
-  kind: 'app,linux'
-  properties: {
-    serverFarmId: plan.id
-    siteConfig: {
-      linuxFxVersion: 'NODE|20-lts'
-      appCommandLine: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
-    }
-  }
-}
-
-// ──────────────────────────────────────
 // Outputs
 // ──────────────────────────────────────
-
-// Post-up hook uses these naming conventions:
-//   App registration: app-{token}
-//   Test user: testuser-{token}
 
 output resourceToken string = resourceToken
 output sqlServerName string = sqlServer.name
@@ -194,5 +163,3 @@ output dabAppName string = dabApp.name
 output dabAppPrincipalId string = dabApp.identity.principalId
 output dabFqdn string = dabApp.properties.configuration.ingress.fqdn
 output sqlCmdrFqdn string = sqlCmdr.properties.configuration.ingress.fqdn
-output webAppName string = webApp.name
-output webAppUrl string = 'https://${webApp.properties.defaultHostName}'

@@ -1,13 +1,13 @@
 # Azure Deployment Script — Flower Shop
 # Uses custom Docker image with embedded dab-config.json (NO storage accounts)
 
-$RG = "flower-shop-rg2"
+$RG = "flower-shop-rg"
 $LOC = "westus"
-$SQL_SERVER = "flower-shop-sql-8291"
+$SQL_SERVER = "flower-shop-sql"
 $SQL_DB = "FlowerShop"
 $SA_PWD = "YourStrong@Passw0rd"
 $CAE = "flower-shop-env"
-$ACR = "flowershopcr8291"
+$ACR = "flowershopcr"
 
 # Resource Group
 az group create --name $RG --location $LOC

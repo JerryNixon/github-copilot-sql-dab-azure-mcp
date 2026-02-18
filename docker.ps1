@@ -10,7 +10,8 @@ Write-Host "Waiting for SQL Server to be healthy..." -ForegroundColor Cyan
 do { Start-Sleep -Seconds 2 } while ((docker inspect --format '{{.State.Health.Status}}' sql-2025) -ne 'healthy')
 
 Write-Host "Deploying schema and seed data..." -ForegroundColor Cyan
-sqlpackage /Action:Publish /SourceFile:database\bin\Debug\database.dacpac /TargetConnectionString:"Server=localhost,14330;Database=FlowerShop;User Id=sa;Password=$($env:SA_PASSWORD ?? 'YourStrong@Passw0rd');TrustServerCertificate=true" /p:BlockOnPossibleDataLoss=false
+$pw = if ($env:SA_PASSWORD) { $env:SA_PASSWORD } else { 'YourStrong@Passw0rd' }
+sqlpackage /Action:Publish /SourceFile:database\bin\Debug\database.dacpac /TargetConnectionString:"Server=localhost,14330;Database=FlowerShop;User Id=sa;Password=$pw;TrustServerCertificate=true" /p:BlockOnPossibleDataLoss=false
 
 Write-Host "Done! Services running at:" -ForegroundColor Green
 Write-Host "  REST API:       http://localhost:5000/api"
