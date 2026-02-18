@@ -10,7 +10,7 @@
       "path": "/api"
     },
     "graphql": {
-      "enabled": false
+      "enabled": true
     },
     "mcp": {
       "enabled": true,
