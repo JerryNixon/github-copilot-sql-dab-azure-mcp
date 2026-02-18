@@ -44,16 +44,41 @@ Copilot will enable the MCP endpoint in DAB, create `.vscode/mcp.json`, and star
 
 Every step follows the rules in `.github/copilot-instructions.md` — schema first, MVP only, no extras unless you ask.
 
+## Database Schema
+
+```mermaid
+erDiagram
+    Shops {
+        int ShopId PK
+        nvarchar Name
+        nvarchar Location
+    }
+    Categories {
+        int CategoryId PK
+        nvarchar Name
+    }
+    Plants {
+        int PlantId PK
+        nvarchar Name
+        int CategoryId FK
+        int Quantity
+        decimal Price
+        int ShopId FK
+    }
+    Categories ||--o{ Plants : contains
+    Shops ||--o{ Plants : stocks
+```
+
 ## Run Locally
 
 ```powershell
-.\docker.ps1
+.\docker-up.ps1
 ```
 
 ## Deploy to Azure
 
 ```powershell
-.\azure.ps1
+.\azure\azure-up.ps1
 ```
 
 ## Architecture
@@ -62,8 +87,8 @@ Every step follows the rules in `.github/copilot-instructions.md` — schema fir
 database/          SQL Database Project (schema + seed data)
 dab-config.json    Data API Builder config (REST + MCP)
 docker-compose.yml Local dev stack
-docker.ps1         One-command local startup
-azure.ps1          One-command Azure deployment
-Dockerfile         Custom DAB image for Azure (no storage accounts)
+docker-up.ps1      One-command local startup
+docker-down.ps1    Stop and remove local services
+azure/             Azure deployment (Bicep, scripts, Dockerfile)
 .github/           Copilot instructions + 6 skills
 ```

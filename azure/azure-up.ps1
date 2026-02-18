@@ -18,12 +18,12 @@ az sql server firewall-rule create --resource-group $RG --server $SQL_SERVER --n
 az sql db create --resource-group $RG --server $SQL_SERVER --name $SQL_DB --service-objective S0
 
 # Deploy schema
-dotnet build database\database.sqlproj
-sqlpackage /Action:Publish /SourceFile:database\bin\Debug\database.dacpac /TargetConnectionString:"Server=tcp:$SQL_SERVER.database.windows.net,1433;Database=$SQL_DB;User Id=sqladmin;Password=$SA_PWD;TrustServerCertificate=true;Encrypt=true" /p:BlockOnPossibleDataLoss=false
+dotnet build ..\database\database.sqlproj
+sqlpackage /Action:Publish /SourceFile:..\database\bin\Debug\database.dacpac /TargetConnectionString:"Server=tcp:$SQL_SERVER.database.windows.net,1433;Database=$SQL_DB;User Id=sqladmin;Password=$SA_PWD;TrustServerCertificate=true;Encrypt=true" /p:BlockOnPossibleDataLoss=false
 
 # Azure Container Registry (custom image with embedded config)
 az acr create --name $ACR --resource-group $RG --sku Basic --admin-enabled true
-az acr build --registry $ACR --image dab-api:latest .
+az acr build --registry $ACR --image dab-api:latest --file azure/Dockerfile ..
 
 # Container Apps
 az containerapp env create --name $CAE --resource-group $RG --location $LOC
