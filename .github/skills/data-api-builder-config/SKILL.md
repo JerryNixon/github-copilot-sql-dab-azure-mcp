@@ -8,12 +8,6 @@ license: MIT
 
 This skill powers GitHub Copilot assistance for **Data API Builder (DAB) configuration files**. It provides expert guidance on the internal structure, schema validation, and best practices for `dab-config.json` files to ensure configurations are complete, valid, and aligned with DAB's capabilities.
 
-## Documentation references
-
-- https://learn.microsoft.com/en-us/azure/data-api-builder/configuration/
-- https://learn.microsoft.com/en-us/azure/data-api-builder/configuration/entities
-- https://github.com/Azure/data-api-builder/blob/main/schemas/dab.draft.schema.json
-
 ---
 
 ## Core Mental Model
@@ -678,20 +672,13 @@ Allows splitting configuration across multiple files for better organization. Us
       "authentication": {
         "provider": "EntraId",
         "jwt": {
-          "audience": "<app-id>",
+          "audience": "api://<app-id>",
           "issuer": "https://login.microsoftonline.com/<tenant-id>/v2.0"
         }
       }
     }
   }
 }
-```
-
-> **CRITICAL — Entra ID Token Configuration:**
-> - Always use `"EntraId"` as the provider value — `"AzureAD"` is deprecated.
-> - Set `requestedAccessTokenVersion` to `2` on the app registration (via Graph API PATCH). Default is `null` which issues v1 tokens with a different issuer format (`https://sts.windows.net/{tenant}/` instead of `https://login.microsoftonline.com/{tenant}/v2.0`).
-> - The `audience` value MUST be the **bare Application (client) ID** (e.g., `"00c6ca6d-..."`) — NOT the `api://` prefixed URI (e.g., ~~`"api://00c6ca6d-..."`~~). v2.0 tokens emit the bare GUID in the `aud` claim.
-> - The `issuer` MUST end with `/v2.0` to match v2.0 token format.
 ```
 
 **Custom JWT:**
@@ -1283,7 +1270,7 @@ Error: Relationship 'products' in entity 'Category' targets 'Product' which is i
       "authentication": {
         "provider": "EntraId",
         "jwt": {
-          "audience": "<app-client-id>",
+          "audience": "api://my-app",
           "issuer": "https://login.microsoftonline.com/<tenant>/v2.0"
         }
       }
@@ -1606,43 +1593,6 @@ Add comments via unused properties (DAB ignores unknown properties):
 8. **Global runtime overrides entity settings** - If global REST is disabled, entity REST is ignored
 9. **Mappings affect policy references** - Use mapped names in policies
 10. **Schema validation is mandatory** - Always include `$schema` property
-11. **Use `EntraId` not `AzureAD`** - `AzureAD` is a deprecated provider enum value
-12. **Audience is bare GUID** - v2.0 tokens use bare client ID as `aud` claim; never use `api://` prefix
-13. **Set `requestedAccessTokenVersion` to 2** - Default (`null`) issues v1 tokens with incompatible issuer format
-
----
-
-## Troubleshooting: Entra ID Authentication (401 Unauthorized)
-
-When DAB returns 401 with `AuthN state: Anonymous` in logs, check these three things in order:
-
-### 1. Token Version Mismatch
-**Symptom:** DAB logs show `AuthN state: Anonymous` despite valid Bearer token.  
-**Cause:** App registration `accessTokenAcceptedVersion` is `null` (default), which issues v1 tokens. v1 tokens have issuer `https://sts.windows.net/{tenant}/` which doesn't match the v2.0 issuer in DAB config.  
-**Fix:**
-```powershell
-# Set token version to 2 via Graph API
-$patch = @{ api = @{ requestedAccessTokenVersion = 2 } } | ConvertTo-Json -Depth 3
-az rest --method PATCH --uri "https://graph.microsoft.com/v1.0/applications/{object-id}" --headers "Content-Type=application/json" --body $patch
-```
-**Prevention:** Always include `requestedAccessTokenVersion = 2` in the app registration PATCH during setup.
-
-### 2. Audience Mismatch (`aud` claim)
-**Symptom:** 401 even after fixing token version.  
-**Cause:** v2.0 tokens emit the **bare Application (client) ID** as the `aud` claim (e.g., `00c6ca6d-...`). If DAB config has `api://00c6ca6d-...` as the audience, validation fails.  
-**Fix:** Set audience to the bare client ID — no `api://` prefix:
-```json
-"audience": "00c6ca6d-7e2c-43c3-937e-b3f0c487f788"
-```
-**Prevention:** Always use `$($app.appId)` (bare GUID) in setup scripts, never `"api://$($app.appId)"`.
-
-### 3. Provider Enum Value
-**Symptom:** Configuration errors or unexpected behavior.  
-**Cause:** `"AzureAD"` is the deprecated provider enum value.  
-**Fix:** Use `"EntraId"` instead:
-```json
-"provider": "EntraId"
-```
 
 ---
 
@@ -1661,5 +1611,5 @@ az rest --method PATCH --uri "https://graph.microsoft.com/v1.0/applications/{obj
 
 ## Related Skills
 
-- See `data-api-builder-cli` for comprehensive DAB CLI guidance
-- See `data-api-builder-mcp` for SQL MCP Server configuration
+- See `data-api-builder.md` for comprehensive DAB CLI guidance
+- See `sql-mcp-server.md` for SQL MCP Server configuration

@@ -7,12 +7,6 @@ description: Guide for Docker Compose setup of SQL Server + Data API Builder + S
 
 This skill provides a minimal, repeatable workflow for running **SQL Server**, **Data API Builder (DAB)**, **SQL Commander**, and **MCP Inspector** together in Docker Compose for local development and testing.
 
-## Documentation references
-
-- https://learn.microsoft.com/azure/data-api-builder/
-- https://docs.docker.com/compose/
-- https://github.com/Azure/data-api-builder
-
 ---
 
 ## Core Mental Model
@@ -180,7 +174,7 @@ Ensure `dab-config.json` enables MCP and uses env vars:
 ### SA login fails (Error 18456, State 8)
 - SQL Server only sets `SA_PASSWORD` on **first volume initialization**. If the volume already exists from a prior run with a different password, changing `.env` has no effect.
 - **Fix:** Run `docker compose down -v` to remove volumes, then `docker compose up -d` to recreate from scratch.
-- **Prevention:** Only run `docker compose down -v` when intentionally resetting SQL state/passwords, because it deletes persisted data.
+- **Prevention:** Before running `docker compose up -d`, always run `docker compose down -v` to ensure a clean state. This avoids stale password mismatches.
 ### DAB can’t connect to SQL Server
 - Ensure `TrustServerCertificate=true` in the connection string
 - Use `Server=sql-2025` (service name) inside containers

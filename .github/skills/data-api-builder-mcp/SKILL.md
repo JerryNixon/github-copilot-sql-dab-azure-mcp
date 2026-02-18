@@ -9,12 +9,6 @@ license: MIT
 
 This skill powers GitHub Copilot assistance for **SQL MCP Server**, a feature of Data API Builder (DAB) version 1.7+ that exposes databases to AI agents via the Model Context Protocol (MCP). It provides conversational guidance for configuring, deploying, and securing SQL MCP Server for AI-powered database workflows.
 
-## Documentation references
-
-- https://learn.microsoft.com/en-us/azure/data-api-builder/mcp/overview
-- https://learn.microsoft.com/en-us/azure/data-api-builder/mcp/quickstart-visual-studio-code
-- https://modelcontextprotocol.io/
-
 ---
 
 ## Core Mental Model
@@ -448,6 +442,7 @@ Server=tcp:myserver.database.windows.net,1433;Database=mydb;Authentication=Activ
 ```bash
 # No auth config needed - defaults to anonymous
 # Agents use only what 'anonymous' role permits
+dab configure --runtime.host.authentication.provider AppService
 ```
 
 **Option 2: Microsoft Entra ID / JWT (Production)**
@@ -456,7 +451,7 @@ dab configure \
   --runtime.host.authentication.provider EntraId
 
 dab configure \
-  --runtime.host.authentication.jwt.audience "<app-client-id-guid>"
+  --runtime.host.authentication.jwt.audience "api://<app-id>"
 
 dab configure \
   --runtime.host.authentication.jwt.issuer "https://login.microsoftonline.com/<tenant-id>/v2.0"
@@ -851,7 +846,7 @@ dab configure --runtime.mcp.description "Production inventory MCP endpoint"
 ```bash
 # Entra ID
 dab configure --runtime.host.authentication.provider EntraId
-dab configure --runtime.host.authentication.jwt.audience "<app-client-id-guid>"
+dab configure --runtime.host.authentication.jwt.audience "api://<app-id>"
 dab configure --runtime.host.authentication.jwt.issuer "https://login.microsoftonline.com/<tenant-id>/v2.0"
 
 # Update permissions for authenticated users

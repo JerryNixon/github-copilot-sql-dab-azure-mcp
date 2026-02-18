@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "flower-shop-db": {
+      "url": "http://localhost:5000/mcp",
+      "type": "http"
+    }
+  }
+}
