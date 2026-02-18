@@ -9,7 +9,7 @@ services:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=${SA_PASSWORD}
     ports:
-      - "14330:1433"
+      - "5000:1433"
     volumes:
       - sql-2025-data:/var/opt/mssql
     healthcheck:
@@ -26,7 +26,7 @@ services:
     environment:
       - ConnectionStrings__db=${SQL_COMMANDER_CONNECTION_STRING}
     ports:
-      - "8080:8080"
+      - "5200:8080"
     depends_on:
       sql-2025:
         condition: service_healthy
@@ -38,12 +38,26 @@ services:
     environment:
       - DATABASE_CONNECTION_STRING=${DATABASE_CONNECTION_STRING}
     ports:
-      - "5000:5000"
+      - "5100:5000"
     volumes:
       - ./dab-config.json:/App/dab-config.json:ro
     depends_on:
       sql-2025:
         condition: service_healthy
+
+  mcp-inspector:
+    image: ghcr.io/modelcontextprotocol/inspector:latest
+    container_name: mcp-inspector
+    restart: unless-stopped
+    environment:
+      - HOST=0.0.0.0
+      - MCP_AUTO_OPEN_ENABLED=false
+      - DANGEROUSLY_OMIT_AUTH=true
+    ports:
+      - "5300:6274"
+      - "5301:6277"
+    depends_on:
+      - api-server
 
 volumes:
   sql-2025-data:
