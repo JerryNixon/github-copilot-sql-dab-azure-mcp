@@ -1,6 +1,6 @@
 ---
-name: data-api-builder-docker
-description: Guide for Docker Compose setup of SQL Server + Data API Builder + SQL Commander + MCP Inspector. Use when asked to create a local Docker dev environment for DAB.
+name: docker-data-api-builder
+description: Docker Compose orchestration of SQL Server, Data API Builder, SQL Commander, and MCP Inspector. Use when asked to create docker-compose.yml, set up local containers, or run DAB without Aspire.
 ---
 
 # Docker SQL Server + DAB + MCP Inspector (Local Dev)
@@ -15,7 +15,7 @@ This skill provides a minimal, repeatable workflow for running **SQL Server**, *
 - **Containers talk by service name**, not `localhost`.
 - **DAB reads config from `/App/dab-config.json`** — mount it **read-only**.
 - **SQL Server must be healthy before DAB starts** — use healthcheck + `depends_on: condition: service_healthy`.
-- **MCP Inspector requires a special URL** to auto-connect to DAB’s `/mcp` endpoint.
+- **MCP Inspector requires a special URL** to auto-connect to DAB's `/mcp` endpoint.
 
 ---
 
@@ -135,7 +135,7 @@ volumes:
 http://localhost:6274/?transport=streamable-http&serverUrl=http%3A%2F%2Fapi-server%3A5000%2Fmcp
 ```
 
-> **Important:** `http://localhost:6274` alone won’t auto-connect.
+> **Important:** `http://localhost:6274` alone won't auto-connect.
 
 ---
 
@@ -175,8 +175,8 @@ Ensure `dab-config.json` enables MCP and uses env vars:
 - SQL Server only sets `SA_PASSWORD` on **first volume initialization**. If the volume already exists from a prior run with a different password, changing `.env` has no effect.
 - **Fix:** Run `docker compose down -v` to remove volumes, then `docker compose up -d` to recreate from scratch.
 - **Prevention:** Before running `docker compose up -d`, always run `docker compose down -v` to ensure a clean state. This avoids stale password mismatches.
-### DAB can’t connect to SQL Server
-- Ensure `TrustServerCertificate=true` in the connection string
+### DAB can't connect to SQL Server
+- **`TrustServerCertificate=true` is required** — SQL Commander will not connect without it (locally or in Azure)
 - Use `Server=sql-2025` (service name) inside containers
 - Confirm SQL container is healthy before DAB starts
 ### SQL Commander or DAB fails with "Cannot open database" (Error 4060)
@@ -184,7 +184,7 @@ Ensure `dab-config.json` enables MCP and uses env vars:
 - SQL Server's healthcheck only verifies the engine accepts connections — it does NOT verify specific databases exist.
 - **Fix:** Build and deploy the database schema with `sqlpackage /Action:Publish` before using SQL Commander or DAB.
 - **Prevention:** Always run `sqlpackage` after `docker compose up -d` and before opening any service that depends on the database.
-### MCP Inspector opens but doesn’t connect
+### MCP Inspector opens but doesn't connect
 - Use the **special auto-connect URL** (not plain `localhost:6274`)
 - Verify DAB is running and `/mcp` is enabled
 
@@ -200,53 +200,5 @@ Ensure `dab-config.json` enables MCP and uses env vars:
 6. **Use service names** for container-to-container connections.
 7. **Ask before adding schema or seed files** (`database.sql`, `sample-data.sql`).
 8. **Prefer a dedicated SQL login** for app connections; only use `sa` to bootstrap if needed.
-9. **For Azure deployment, ALWAYS build a custom Docker image** with `dab-config.json` embedded and push to ACR. **NEVER** use Azure Files, storage accounts, or volume mounts for DAB config — that is the **anti-pattern**.
 
----
-
-## Azure Deployment (Custom Image Pattern)
-
-**CRITICAL:** When deploying DAB to Azure, **always build a custom Docker image** that embeds `dab-config.json`. Never use Azure Files, storage accounts, or volume mounts for the config file — that is the **anti-pattern** for DAB.
-
-Volume mounts via read-only bind mounts (`:ro`) are **only appropriate for local Docker Compose development** where fast iteration on config changes is needed. For any cloud/Azure deployment, the config must be baked into the image.
-
-### Why Custom Image?
-
-- **Immutable** — Config is versioned with the image, no drift
-- **Reproducible** — Same image = same behavior everywhere
-- **No extra infrastructure** — No storage accounts, file shares, or mount configs
-- **Faster startup** — No network file system latency
-- **Simpler** — Fewer moving parts, fewer failure modes
-
-### Dockerfile
-
-```dockerfile
-FROM mcr.microsoft.com/azure-databases/data-api-builder:1.7.83-rc
-COPY dab-config.json /App/dab-config.json
-```
-
-### Deploy to Azure Container Apps
-
-```powershell
-# Create ACR
-az acr create --name <acr-name> --resource-group <rg> --sku Basic --admin-enabled true
-
-# Build and push custom image
-az acr build --registry <acr-name> --image dab-api:latest .
-
-# Deploy to Container Apps
-az containerapp create --name <app-name> --resource-group <rg> --environment <env> \
-  --image <acr-name>.azurecr.io/dab-api:latest \
-  --registry-server <acr-name>.azurecr.io \
-  --target-port 5000 --ingress external \
-  --secrets "db-conn=<connection-string>" \
-  --env-vars "DATABASE_CONNECTION_STRING=secretref:db-conn"
-```
-
-### Anti-Patterns (NEVER DO)
-
-- ❌ Azure Files share mount for `dab-config.json`
-- ❌ Azure Storage Account for config files
-- ❌ Volume mounts in Azure Container Apps for DAB config
-- ❌ Any external file storage for DAB config in cloud deployments
-- ✅ Custom Docker image with config embedded via `COPY`
+> For Azure deployment, see the `azure-data-api-builder` skill.

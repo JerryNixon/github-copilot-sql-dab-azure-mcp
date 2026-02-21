@@ -1,6 +1,6 @@
 ---
 name: data-api-builder-mcp
-description: Guide for SQL MCP Server (Data API Builder MCP). Use when configuring databases for AI agent access via Model Context Protocol.
+description: Enable MCP endpoints in Data API Builder so AI agents (Copilot, Claude, etc.) can query SQL databases. Use when asked to set up MCP, create .vscode/mcp.json, or give an agent database access.
 license: MIT
 ---
 

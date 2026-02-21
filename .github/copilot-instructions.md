@@ -81,7 +81,7 @@ If the user asks to deploy to Azure, ask if they mean SQL Azure or Fabric SQL. D
 
 12. **Create orchestration files:**
     - **Aspire:** `apphost.cs` (use `data-api-builder-aspire` skill)
-    - **Docker:** `docker-compose.yml` (use `data-api-builder-docker` skill)
+    - **Docker:** `docker-compose.yml` (use `docker-data-api-builder` skill)
 
 13. **Create DAB config:** `dab-config.json` with entities for each table, view or stored procedure. 
 
@@ -262,6 +262,8 @@ Nothing is added silently. Every expansion is a conscious, user-approved decisio
 
 > **Note:** Service names differ by orchestration choice. Docker Compose typically uses `sql-2025`, Aspire uses `sql-server`.
 
+> **CRITICAL:** All connection strings **must** include `TrustServerCertificate=true`. SQL Commander will not connect without it — locally or in Azure.
+
 ### Schema Change Workflow
 
 1. **Edit:** Modify/add `.sql` files in `database/Tables/`
@@ -379,7 +381,7 @@ az containerapp create --name <app-name> --resource-group <rg> --environment <en
 | Choice | Skill | Files Created |
 |--------|-------|---------------|
 | **Aspire** | `data-api-builder-aspire` | `apphost.cs`, `.env`, `dab-config.json` |
-| **Docker** | `data-api-builder-docker` | `docker-compose.yml`, `.env`, `dab-config.json` |
+| **Docker** | `docker-data-api-builder` | `docker-compose.yml`, `.env`, `dab-config.json` |
 
 ### Orchestration Feature Comparison
 

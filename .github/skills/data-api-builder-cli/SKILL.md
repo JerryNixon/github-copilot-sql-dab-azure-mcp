@@ -1,6 +1,6 @@
 ---
 name: data-api-builder-cli
-description: Guide for using Data API Builder CLI. Use when working with DAB configurations, entities, or database API generation.
+description: Data API Builder CLI commands for init, add, update, export, and start. Use when asked to create a dab-config, add entities, configure REST/GraphQL endpoints, or run DAB locally via CLI.
 license: MIT
 ---
 

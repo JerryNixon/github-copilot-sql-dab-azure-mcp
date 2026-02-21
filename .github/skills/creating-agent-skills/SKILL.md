@@ -1,6 +1,6 @@
 ---
 name: creating-agent-skills
-description: Guide for creating GitHub Copilot Agent Skills. Use this when asked to create new skills, understand skill structure, or improve existing skills.
+description: Guide for creating and auditing GitHub Copilot Agent Skills. Use this when asked to create new skills, understand skill structure, or improve existing skills.
 license: MIT
 ---
 
@@ -118,37 +118,57 @@ The `description` field determines **when Copilot loads your skill**. Make it sp
 ### Good Descriptions ✅
 
 ```yaml
-description: Guide for debugging failing GitHub Actions workflows. Use this when asked to debug failing GitHub Actions workflows.
+description: Data API Builder CLI commands for init, add, update, export, and start. Use when asked to create a dab-config, add entities, configure REST/GraphQL endpoints, or run DAB locally via CLI.
+# Specific actions (init, add, update) + user trigger phrases (create, configure, run)
 ```
 ```yaml
-description: Instructions for creating and managing DAB configurations. Use when working with Data API Builder CLI, entities, or database API generation.
+description: Enable MCP endpoints in Data API Builder so AI agents (Copilot, Claude, etc.) can query SQL databases. Use when asked to set up MCP, create .vscode/mcp.json, or give an agent database access.
+# Names the outcome (AI agents query databases) + concrete artifacts (.vscode/mcp.json)
 ```
 ```yaml
-description: PostgreSQL query optimization techniques. Use when debugging slow queries or improving database performance.
+description: Add SQL Commander to a .NET Aspire AppHost for browsing and querying SQL Server. Use when asked to add a SQL query tool, browse database tables, or configure SQL Commander in Aspire.
+# Starts with an action verb (Add) + includes what a user would say ("add a SQL query tool")
 ```
 
 ### Bad Descriptions ❌
 
 ```yaml
-description: GitHub Actions stuff
-# Too vague - when should this be used?
+description: Guide for using Data API Builder CLI. Use when working with DAB configurations, entities, or database API generation.
+# "Guide for using" is filler — what actions? "working with" is passive — what operations?
 ```
 ```yaml
-description: This skill contains comprehensive information about Docker containerization, Kubernetes orchestration, CI/CD pipelines, monitoring, and cloud deployment strategies.
-# Too broad - should be multiple skills
+description: Guide for Data API Builder configuration files. Use when working with dab-config.json structure, validation, or configuration best practices.
+# "Guide for" + "working with" — too passive. Doesn't trigger on "create", "edit", or "validate".
+```
+```yaml
+description: Guide for SQL MCP Server (Data API Builder MCP). Use when configuring databases for AI agent access via Model Context Protocol.
+# Jargon-heavy ("Model Context Protocol"). Misses what users actually say: "MCP endpoint", "Copilot database access".
 ```
 ```yaml
 description: Helper for things
 # Not actionable - what things?
 ```
 
+### Description Anti-Patterns
+
+| Pattern | Problem | Fix |
+|---------|---------|-----|
+| "Guide for X" | Filler — every skill is a guide | Start with an action verb or the outcome |
+| "Use when working with X" | Passive — doesn't match user intent | "Use when asked to create/add/configure X" |
+| Jargon without context | "MCP" alone won't trigger for most users | Expand: "MCP (Model Context Protocol)" + plain-language synonyms |
+| Listing only tool names | Doesn't capture what users actually say | Include user-facing phrases: "add a SQL query tool", "give an agent database access" |
+| One generic trigger | Only fires on exact term | Add 2-3 alternate phrasings users might say |
+
 ### Description Best Practices
 
-1. **Be specific**: Mention the tool, framework, or task type
-2. **Include trigger phrases**: "Use this when asked to...", "Use when working with..."
-3. **Keep it concise**: 50-150 characters ideal
-4. **Use action verbs**: debugging, creating, optimizing, configuring
-5. **Avoid jargon alone**: Include context (not just "DAB" but "Data API Builder")
+1. **Start with the outcome**: "Enable MCP endpoints..." not "Guide for MCP endpoints..."
+2. **Use action verbs**: create, add, enable, configure, deploy, debug — not "working with"
+3. **Include user trigger phrases**: What would a user *actually say*? "add a SQL query tool", "set up MCP", "create a database project"
+4. **Name concrete artifacts**: `.vscode/mcp.json`, `dab-config.json`, `docker-compose.yml`, `.sqlproj`
+5. **Expand jargon once**: "MCP (Model Context Protocol)", "DAB (Data API Builder)", "dacpac"
+6. **Add 2-3 alternate phrasings**: Users say things differently — "deploy a dacpac" vs "schema deployment" vs "replace WithCreationScript"
+7. **Keep it concise**: 100-200 characters ideal (enough for specificity, short enough to scan)
+8. **Avoid filler prefixes**: Drop "Guide for", "Instructions for", "This skill contains"
 
 ---
 

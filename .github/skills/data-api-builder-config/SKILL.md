@@ -1,6 +1,6 @@
 ---
 name: data-api-builder-config
-description: Guide for Data API Builder configuration files. Use when working with dab-config.json structure, validation, or configuration best practices.
+description: Data API Builder dab-config.json structure, entities, relationships, permissions, and runtime settings. Use when asked to create, edit, validate, or troubleshoot a dab-config.json file.
 license: MIT
 ---
 
